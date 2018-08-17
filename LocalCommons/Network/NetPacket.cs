@@ -19,7 +19,7 @@ namespace LocalCommons.Network
         private bool m_littleEndian;
         private bool m_IsArcheAge;
         private byte level;
-        private static byte m_NumPck = 0;  //глобальный подсчет пакетов DD05
+        public static byte m_NumPck = 0;  //修复第二用户、二次登陆、大厅返回重连DD05计数器造成错误问题 BUGглобальный подсчет пакетов DD05
 
 
         public bool IsArcheAgePacket
