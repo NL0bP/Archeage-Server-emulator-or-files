@@ -16,6 +16,7 @@ namespace ArcheAge.ArcheAge.Network.Connections
         //----- Static
         private static Dictionary<int, Account> m_CurrentAccounts = new Dictionary<int, Account>();
         private byte m_Random;
+        public byte m_NumPck = 0;  //修复第二用户、二次登陆、大厅返回重连DD05计数器造成错误问题 BUGглобальный подсчет пакетов DD05
         public static Dictionary<int, Account> CurrentAccounts
         {
             get { return m_CurrentAccounts; }
@@ -32,7 +33,9 @@ namespace ArcheAge.ArcheAge.Network.Connections
         public override void SendAsync(NetPacket packet)
         {
             packet.IsArcheAgePacket = true;
+			NetPacket.m_NumPck = m_NumPck;//重写为当前连接的计数
             base.SendAsync(packet);
+			m_NumPck = NetPacket.m_NumPck;//将计数回写
         }
         public void SendAsyncd(NetPacket packet)
         {
