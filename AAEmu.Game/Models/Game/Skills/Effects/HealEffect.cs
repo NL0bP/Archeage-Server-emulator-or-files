@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using AAEmu.Commons.Utils;
 using AAEmu.Game.Core.Packets.G2C;
 using AAEmu.Game.Models.Game.Skills.Templates;
@@ -71,7 +71,7 @@ namespace AAEmu.Game.Models.Game.Skills.Effects
             trg.BroadcastPacket(new SCUnitHealedPacket(castObj, casterObj, target.ObjId, 0, value), true);
             trg.Hp += value;
             trg.Hp = Math.Min(trg.Hp, trg.MaxHp);
-            trg.BroadcastPacket(new SCUnitPointsPacket(trg.ObjId, trg.Hp, trg.Mp), true);
+            trg.BroadcastPacket(new SCUnitPointsPacket(trg.ObjId, trg.Hp, trg.Mp, trg.HighAbilityRsc), true);
         }
     }
 }

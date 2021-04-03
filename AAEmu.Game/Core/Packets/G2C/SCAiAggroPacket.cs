@@ -8,12 +8,14 @@ namespace AAEmu.Game.Core.Packets.G2C
         private readonly uint _npcId;
         private readonly int _count;
         private readonly uint _hostileUnitId;
+        private readonly int _value;
 
-        public SCAiAggroPacket(uint npcId, int count, uint hostileUnitId=0) : base(SCOffsets.SCAiAggroPacket, 5)
+        public SCAiAggroPacket(uint npcId, int count, uint hostileUnitId = 0, int summarizeDamage = 0) : base(SCOffsets.SCAiAggroPacket, 5)
         {
             _npcId = npcId;
             _count = count;
             _hostileUnitId = hostileUnitId;
+            _value = summarizeDamage;
         }
 
         public override PacketStream Write(PacketStream stream)
@@ -24,7 +26,7 @@ namespace AAEmu.Game.Core.Packets.G2C
             if (_count > 0)
             {
                 stream.WriteBc(_hostileUnitId);
-                stream.Write(248); // value 
+                stream.Write(_value); // value 
                 stream.Write(0);   // value
                 stream.Write(0);   // value
                 stream.Write((byte)135); // topFlags

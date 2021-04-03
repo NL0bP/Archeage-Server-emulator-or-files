@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using AAEmu.Game.Models.Game.DoodadObj.Static;
 
 namespace AAEmu.Game.Models.Game.DoodadObj.Templates
 {
@@ -11,7 +12,7 @@ namespace AAEmu.Game.Models.Game.DoodadObj.Templates
         public int Percent { get; set; }
         public int MinTime { get; set; }
         public int MaxTime { get; set; }
-        public uint ModelKindId { get; set; }
+        public ModelKind ModelKindId { get; set; }
         public bool UseCreatorFaction { get; set; }
         public bool ForceTodTopPriority { get; set; }
         public uint MilestoneId { get; set; }

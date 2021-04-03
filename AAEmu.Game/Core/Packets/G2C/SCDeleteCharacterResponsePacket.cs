@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using AAEmu.Commons.Network;
 using AAEmu.Game.Core.Network.Game;
 
@@ -26,6 +26,7 @@ namespace AAEmu.Game.Core.Packets.G2C
             stream.Write(_status);
             stream.Write(_deleteRequestedTime);
             stream.Write(_deleteDelay);
+
             return stream;
         }
     }

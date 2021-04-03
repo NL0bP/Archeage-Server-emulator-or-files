@@ -1,4 +1,4 @@
-using AAEmu.Commons.Network;
+﻿using AAEmu.Commons.Network;
 using AAEmu.Game.Core.Network.Game;
 using AAEmu.Game.Models.Game.Mails;
 
@@ -7,9 +7,9 @@ namespace AAEmu.Game.Core.Packets.G2C
     public class SCMailReturnedPacket : GamePacket
     {
         private readonly long _mailId;
-        private readonly Mail _mail;
-        
-        public SCMailReturnedPacket(long mailId, Mail mail) : base(SCOffsets.SCMailReturnedPacket, 5)
+        private readonly MailHeader _mail;
+
+        public SCMailReturnedPacket(long mailId, MailHeader mail) : base(SCOffsets.SCMailReturnedPacket, 5)
         {
             _mailId = mailId;
             _mail = mail;

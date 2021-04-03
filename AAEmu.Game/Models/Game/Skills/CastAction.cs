@@ -1,16 +1,8 @@
-using AAEmu.Commons.Network;
+﻿using AAEmu.Commons.Network;
+using AAEmu.Game.Models.Game.Skills.Static;
 
 namespace AAEmu.Game.Models.Game.Skills
 {
-    public enum CastType : byte
-    {
-        Skill = 0,
-        Plot = 1,
-        Buff = 2,
-        Unk2 = 3,
-        Unk3 = 4
-    }
-
     public abstract class CastAction : PacketMarshaler
     {
         public CastType Type { get; set; }
@@ -96,7 +88,7 @@ namespace AAEmu.Game.Models.Game.Skills
     {
         public CastUnk2()
         {
-            Type = CastType.Unk2;
+            Type = CastType.Passive;
         }
 
         public override PacketStream Write(PacketStream stream)
@@ -113,7 +105,7 @@ namespace AAEmu.Game.Models.Game.Skills
     {
         public CastUnk3()
         {
-            Type = CastType.Unk3;
+            Type = CastType.Doodad;
         }
 
         public override PacketStream Write(PacketStream stream)

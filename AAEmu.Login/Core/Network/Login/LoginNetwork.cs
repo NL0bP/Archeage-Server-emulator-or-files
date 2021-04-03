@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Net;
+
 using AAEmu.Commons.Network.Type;
 using AAEmu.Commons.Utils;
 using AAEmu.Login.Core.Packets.C2L;
 using AAEmu.Login.Models;
+
 using NLog;
 
 namespace AAEmu.Login.Core.Network.Login
@@ -40,11 +42,11 @@ namespace AAEmu.Login.Core.Network.Login
             var config = AppConfiguration.Instance.Network;
             _server = new Server(
                 new IPEndPoint(config.Host.Equals("*") ? IPAddress.Any : IPAddress.Parse(config.Host), config.Port),
-                10);
+                config.NumConnections);
             _server.SetHandler(_handler);
             _server.Start();
 
-            _log.Info("Network started");
+            _log.Info("Network started with Number Connections of: " + config.NumConnections);
         }
 
         public void Stop()

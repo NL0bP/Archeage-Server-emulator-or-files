@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+
 using AAEmu.Commons.Utils;
 using AAEmu.Game.Models.Game.Formulas;
 using AAEmu.Game.Utils.DB;
+
 using Jace;
 using Jace.Execution;
+
 using NLog;
 
 namespace AAEmu.Game.Core.Managers
@@ -14,7 +17,7 @@ namespace AAEmu.Game.Core.Managers
     {
         private static Logger _log = LogManager.GetCurrentClassLogger();
 
-        private Dictionary<FormulaOwnerType, Dictionary<UnitFormulaKind, UnitFormula>> _unitFormulas;
+        private Dictionary<UnitOwnerType, Dictionary<UnitFormulaKind, UnitFormula>> _unitFormulas;
         private Dictionary<WearableFormulaType, WearableFormula> _wearableFormulas;
         private Dictionary<uint, Formula> _formulas;
 
@@ -23,7 +26,7 @@ namespace AAEmu.Game.Core.Managers
 
         public CalculationEngine CalculationEngine { get; private set; }
 
-        public UnitFormula GetUnitFormula(FormulaOwnerType owner, UnitFormulaKind kind)
+        public UnitFormula GetUnitFormula(UnitOwnerType owner, UnitFormulaKind kind)
         {
             if (_unitFormulas.ContainsKey(owner) && _unitFormulas[owner].ContainsKey(kind))
                 return _unitFormulas[owner][kind];
@@ -57,9 +60,9 @@ namespace AAEmu.Game.Core.Managers
             CalculationEngine.AddFunction("if_positive", (a, b, c) => a > 0 ? b : c);
             CalculationEngine.AddFunction("if_zero", (a, b, c) => a == 0 ? b : c);
 
-            _unitFormulas = new Dictionary<FormulaOwnerType, Dictionary<UnitFormulaKind, UnitFormula>>();
-            foreach (var owner in Enum.GetValues(typeof(FormulaOwnerType)))
-                _unitFormulas.Add((FormulaOwnerType)owner, new Dictionary<UnitFormulaKind, UnitFormula>());
+            _unitFormulas = new Dictionary<UnitOwnerType, Dictionary<UnitFormulaKind, UnitFormula>>();
+            foreach (var owner in Enum.GetValues(typeof(UnitOwnerType)))
+                _unitFormulas.Add((UnitOwnerType)owner, new Dictionary<UnitFormulaKind, UnitFormula>());
             _wearableFormulas = new Dictionary<WearableFormulaType, WearableFormula>();
             _unitVariables =
                 new Dictionary<uint, Dictionary<UnitFormulaVariableType, Dictionary<uint, UnitFormulaVariable>>>();
@@ -82,7 +85,7 @@ namespace AAEmu.Game.Core.Managers
                                 Id = reader.GetUInt32("id"),
                                 TextFormula = reader.GetString("formula"),
                                 Kind = (UnitFormulaKind)reader.GetByte("kind_id"),
-                                Owner = (FormulaOwnerType)reader.GetByte("owner_type_id")
+                                Owner = (UnitOwnerType)reader.GetByte("owner_type_id")
                             };
                             if (formula.Prepare())
                                 _unitFormulas[formula.Owner].Add(formula.Kind, formula);
@@ -124,18 +127,16 @@ namespace AAEmu.Game.Core.Managers
                     using (var sqliteReader = command.ExecuteReader())
                     using (var reader = new SQLiteWrapperReader(sqliteReader))
                     {
-                        //var step = 0U;
                         while (reader.Read())
                         {
-                            var formula = new WearableFormula();
-                            formula.Id = reader.GetUInt32("id"); // нет такого поля в базе 3.5.5.3
-                            //formula.Id = step++;
-                            formula.Type = (WearableFormulaType)reader.GetByte("kind_id");
-                            formula.TextFormula = reader.GetString("formula");
-                            if (formula.Prepare())
+                            var formula = new WearableFormula
                             {
+                                Id = reader.GetUInt32("id"),
+                                Type = (WearableFormulaType)reader.GetByte("kind_id"),
+                                TextFormula = reader.GetString("formula")
+                            };
+                            if (formula.Prepare())
                                 _wearableFormulas.Add(formula.Type, formula);
-                            }
                         }
                     }
                 }

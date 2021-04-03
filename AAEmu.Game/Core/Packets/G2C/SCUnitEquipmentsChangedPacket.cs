@@ -1,4 +1,4 @@
-using AAEmu.Commons.Network;
+﻿using AAEmu.Commons.Network;
 using AAEmu.Game.Core.Network.Game;
 using AAEmu.Game.Models.Game.Items;
 
@@ -14,18 +14,27 @@ namespace AAEmu.Game.Core.Packets.G2C
             _characterId = characterId;
             _items = items;
         }
+        public SCUnitEquipmentsChangedPacket(uint objectId, byte slot, Item item) : base(SCOffsets.SCUnitEquipmentsChangedPacket, 5)
+        {
+            _characterId = objectId;
+            _items = new[] { (slot, item) };
+        }
 
         public override PacketStream Write(PacketStream stream)
         {
             stream.WriteBc(_characterId);
-            stream.Write((byte) _items.Length); // TODO max 28
+            stream.Write((byte)_items.Length); // TODO max 28 for 1.1, 29 for 3.0.3.0
             foreach (var (slot, item) in _items)
             {
                 stream.Write(slot);
                 if (item == null)
+                {
                     stream.Write(0);
+                }
                 else
+                {
                     stream.Write(item);
+                }
             }
 
             return stream;

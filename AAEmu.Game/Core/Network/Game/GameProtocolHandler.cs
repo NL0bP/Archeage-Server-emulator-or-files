@@ -148,7 +148,8 @@ namespace AAEmu.Game.Core.Network.Game
                             var output = DecryptCs.Decode(input, GameConnection.CryptRsa.XorKey, GameConnection.CryptRsa.AesKey, GameConnection.CryptRsa.Iv, m_numPck);
                             m_numPck++; //увеличим номер пакета от клиента
                             var OutBytes = new byte[output.Length + 5];
-                            Buffer.BlockCopy(stream2, offset, OutBytes, 0, 5); // скопируем (ushort)len, 0005 
+                            //Buffer.BlockCopy(stream2, offset, OutBytes, 0, 5); // скопируем (ushort)len, 0005 
+                            Buffer.BlockCopy(stream2, 0, OutBytes, 0, 5);
                             Buffer.BlockCopy(output, 1, OutBytes, 5, output.Length - 1); // сформируем полный расшифрованные пакет
                             // заменим шифрованные данные на дешифрованные
                             var strm = new PacketStream();

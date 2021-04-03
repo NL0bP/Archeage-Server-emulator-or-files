@@ -1,20 +1,29 @@
-using AAEmu.Commons.Network;
+﻿using AAEmu.Commons.Network;
 
 namespace AAEmu.Game.Models.Game.Mails
 {
     public class CountUnreadMail : PacketMarshaler
     {
-        private int Sent { get; set; }
-        private int Received { get; set; }
-        private int MiaReceived { get; set; }
-        private int CommercialReceived { get; set; }
+        public int TotalSent { get; set; }
+        public int TotalReceived { get; set; }
+        public int TotalMiaReceived { get; set; }
+        public int TotalCommercialReceived { get; set; }
+        public int UnreadSent { get; set; }
+        public int UnreadReceived { get; set; }
+        public int UnreadMiaReceived { get; set; }
+        public int UnreadCommercialReceived { get; set; }
 
         public override PacketStream Write(PacketStream stream)
         {
-            stream.Write(Sent);
-            stream.Write(Received);
-            stream.Write(MiaReceived);
-            stream.Write(CommercialReceived);
+            stream.Write(TotalSent);
+            stream.Write(TotalReceived);
+            stream.Write(TotalMiaReceived);
+            stream.Write(TotalCommercialReceived);
+            stream.Write(UnreadSent);
+            stream.Write(UnreadReceived);
+            stream.Write(UnreadMiaReceived);
+            stream.Write(UnreadCommercialReceived);
+
             return stream;
         }
     }

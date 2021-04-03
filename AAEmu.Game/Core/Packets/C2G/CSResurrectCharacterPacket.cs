@@ -1,4 +1,4 @@
-using AAEmu.Commons.Network;
+﻿using AAEmu.Commons.Network;
 using AAEmu.Game.Core.Network.Game;
 using AAEmu.Game.Core.Packets.G2C;
 
@@ -34,7 +34,8 @@ namespace AAEmu.Game.Core.Packets.C2G
                 new SCUnitPointsPacket(
                     Connection.ActiveChar.ObjId,
                     Connection.ActiveChar.Hp,
-                    Connection.ActiveChar.Mp
+                    Connection.ActiveChar.Mp,
+                    Connection.ActiveChar.HighAbilityRsc
                 ),
                 true
             );

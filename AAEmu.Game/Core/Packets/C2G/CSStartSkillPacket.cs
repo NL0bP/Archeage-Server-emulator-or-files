@@ -2,6 +2,7 @@
 using AAEmu.Game.Core.Managers;
 using AAEmu.Game.Core.Network.Game;
 using AAEmu.Game.Models.Game.Skills;
+using AAEmu.Game.Models.Game.Skills.Static;
 
 namespace AAEmu.Game.Core.Packets.C2G
 {
@@ -16,7 +17,7 @@ namespace AAEmu.Game.Core.Packets.C2G
             var skillId = stream.ReadUInt32();
 
             var skillCasterType = stream.ReadByte(); // кто применяет
-            var skillCaster = SkillCaster.GetByType((SkillCasterType)skillCasterType);
+            var skillCaster = SkillCaster.GetByType((EffectOriginType)skillCasterType);
             skillCaster.Read(stream);
 
             var skillCastTargetType = stream.ReadByte(); // на кого применяют
@@ -30,14 +31,14 @@ namespace AAEmu.Game.Core.Packets.C2G
 
             _log.Debug("StartSkill: Id {0}, flag {1}", skillId, flag);
 
-            if (SkillManager.Instance.IsDefaultSkill(skillId) || SkillManager.Instance.IsCommonSkill(skillId))
+            if (SkillManager.Instance.IsDefaultSkill(skillId) || SkillManager.Instance.IsCommonSkill(skillId) && !(skillCaster is CasterEffectBuff))
             {
                 var skill = new Skill(SkillManager.Instance.GetSkillTemplate(skillId)); // TODO переделать...
                 skill.Use(Connection.ActiveChar, skillCaster, skillCastTarget, skillObject);
             }
-            else if (skillCaster is SkillItem)
+            else if (skillCaster is CasterEffectBuff)
             {
-                var item = Connection.ActiveChar.Inventory.GetItem(((SkillItem)skillCaster).ItemId);
+                var item = Connection.ActiveChar.Inventory.GetItemById(((CasterEffectBuff)skillCaster).ItemId);
                 if (item == null || skillId != item.Template.UseSkillId)
                     return;
                 Connection.ActiveChar.Quests.OnItemUse(item);
@@ -47,6 +48,11 @@ namespace AAEmu.Game.Core.Packets.C2G
             else if (Connection.ActiveChar.Skills.Skills.ContainsKey(skillId))
             {
                 var skill = Connection.ActiveChar.Skills.Skills[skillId];
+                skill.Use(Connection.ActiveChar, skillCaster, skillCastTarget, skillObject);
+            }
+            else if (skillId > 0 && Connection.ActiveChar.Skills.IsVariantOfSkill(skillId))
+            {
+                var skill = new Skill(SkillManager.Instance.GetSkillTemplate(skillId));
                 skill.Use(Connection.ActiveChar, skillCaster, skillCastTarget, skillObject);
             }
             else

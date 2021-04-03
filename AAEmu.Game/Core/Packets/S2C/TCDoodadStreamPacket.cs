@@ -20,21 +20,19 @@ namespace AAEmu.Game.Core.Packets.S2C
 
         public override PacketStream Write(PacketStream stream)
         {
-            stream.Write(_id); // id
-            stream.Write(_next); // next
+            stream.Write(_id);             // id
+            stream.Write(_next);           // next
             stream.Write(_doodads.Length); // count
             foreach (var doodad in _doodads)
             {
-                stream.WriteBc(doodad.ObjId); // bc
+                stream.WriteBc(doodad.ObjId);    // bc
                 stream.Write(doodad.TemplateId); // type
-                stream.WritePosition(doodad.Position.X, doodad.Position.Y, doodad.Position.Z); // pos_bc_xyz
+                stream.WritePositionBc(doodad.Position.X, doodad.Position.Y, doodad.Position.Z); // pos_bc_xyz
                 stream.Write(Helpers.ConvertRotation(doodad.Position.RotationX)); // rotx
                 stream.Write(Helpers.ConvertRotation(doodad.Position.RotationY)); // roty
                 stream.Write(Helpers.ConvertRotation(doodad.Position.RotationZ)); // rotz
-                stream.Write(doodad.Scale); //scale
+                stream.Write(doodad.Scale);       //scale
                 stream.Write(doodad.FuncGroupId); // doodad_func_groups Id type
-                //stream.Write(doodad.TimeLeft); // growing
-                //stream.Write(doodad.PlantTime); // plantTime
             }
 
             return stream;

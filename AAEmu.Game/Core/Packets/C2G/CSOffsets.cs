@@ -13,7 +13,7 @@
         public const ushort CSChallengeDuelPacket = 0x0ee;
         public const ushort CSStartDuelPacket = 0x08;
         public const ushort CSHeroRankingListPacket = 0x6a;
-        public const ushort CSUnknownPacket_0x186 = 0x186;
+        public const ushort CSResturnAddrsPacket = 0x186;
         public const ushort CSHeroCandidateListPacket = 0x2f;
         public const ushort CSHeroAbstainPacket = 0x189;
         public const ushort CSHeroVotingPacket = 0x0d6;
@@ -131,7 +131,8 @@
         public const ushort CSEditCharacterPacket = 0x82;
         public const ushort CSBroadcastVisualOption_0_Packet = 0x31;
         public const ushort CSSpawnCharacterPacket = 0x15a;
-        public const ushort CSRsaencryptAeskeyXorkeyPacket = 0x163;
+        public const ushort CSAesXorKeyPacket = 0x163;     // level = 1
+        public const ushort CSAesXorKey_05_Packet = 0x163; // level = 5
         public const ushort CSNotifySubZonePacket = 0x1ab;
         public const ushort CSSaveTutorialPacket = 0x23;
         public const ushort CSRequestUIDataPacket = 0x50;
@@ -411,7 +412,6 @@
         public const ushort CSRequestCharBriefPacket = 0x0ffff;
         public const ushort CSRequestSecondPasswordKeyTablesPacket = 0x0ffff;
         public const ushort CSResetQuestContextPacket = 0x0ffff;
-        public const ushort CSResturnAddrsPacket = 0x0ffff;
         public const ushort CSSaveDoodadUccStringPacket = 0x0ffff;
         public const ushort CSSearchListPacket = 0x0ffff;
         public const ushort CSSetTeamOfficerPacket = 0x0ffff;

@@ -151,6 +151,47 @@ namespace AAEmu.Commons.Utils
             return (resultX, resultY, resultZ);
         }
 
+        public static (long x, long y, float z) ConvertWorldPosition(byte[] values)
+        {
+            var tempX = 8 * (values[0] + ((values[1] + (values[2] << 8)) << 8));
+            var flagX = (int)(((-(values[8] & 0x80) >> 30) & 0xFFFFFFFE) + 1);
+            var resX = ((long)tempX << 32) * flagX;
+
+            var tempY = 8 * (values[3] + ((values[4] + (values[5] << 8)) << 8));
+            var flagY = (((-(values[8] & 0x40) >> 30) & 0xFFFFFFFE) + 1);
+            var resY = ((long)tempY << 32) * flagY;
+
+            var tempZ = (ulong)(values[6] + ((values[7] + ((values[8] & 0x3f) << 8)) << 8));
+
+            var resultZ = (float)Math.Round(tempZ * 0.00000023841858 * 4196 - 100, 4, MidpointRounding.ToEven);
+
+            return (resX, resY, resultZ);
+        }
+
+        public static byte[] ConvertWorldPosition(long x, long y, float z)
+        {
+            var preX = x >> 31;
+            var preY = y >> 31;
+
+            var resultX = (preX ^ (x + preX + (0 > preX ? 1 : 0))) >> 3;
+            var resultY = (preY ^ (y + preY + (0 > preY ? 1 : 0))) >> 3;
+            var resultZ = (long)Math.Floor((z + 100f) / 4196f * 4194304f + 0.5);
+
+            var position = new byte[9];
+            position[0] = (byte)(resultX >> 32);
+            position[1] = (byte)(resultX >> 40);
+            position[2] = (byte)(resultX >> 48);
+
+            position[3] = (byte)(resultY >> 32);
+            position[4] = (byte)(resultY >> 40);
+            position[5] = (byte)(resultY >> 48);
+
+            position[6] = (byte)resultZ;
+            position[7] = (byte)(resultZ >> 8);
+            position[8] = (byte)(((resultZ >> 16) & 0x3F) + (((y < 0 ? 1 : 0) + 2 * (x < 0 ? 1 : 0)) << 6));
+            return position;
+        }
+
         public static byte[] ConvertPosition(float x, float y, float z)
         {
             var longX = ConvertLongX(x);
@@ -198,9 +239,9 @@ namespace AAEmu.Commons.Utils
             return (long)(y * 4096) << 32;
         }
 
-        public static short ConvertRotation(sbyte rotation)
+        public static ushort ConvertRotation(sbyte rotation)
         {
-            return (short)(rotation * 0.0078740157f / 0.000030518509f);
+            return (ushort)(rotation * 0.0078740157f / 0.000030518509f);
         }
 
         public static sbyte ConvertRotation(short rotation)
@@ -262,6 +303,36 @@ namespace AAEmu.Commons.Utils
         {
             var size = data.Length;
             return Crc8(data, size);
+        }
+        public static short ConvertRadianToShortDirection(float radian)
+        {
+            var z = radian * 0.15915494309189533576888376337251; // values.X / (float)Math.PI * 2; // переводим из радиан в направление
+
+            var rad = Convert.ToInt16(z * 32767f);
+
+            return rad;
+        }
+        public static sbyte ConvertRadianToSbyteDirection(float radian)
+        {
+            var z = radian * 0.15915494309189533576888376337251; // values.X / (float)Math.PI * 2; // переводим из радиан в направление
+
+            var rad = Convert.ToSByte(z * 127f);
+
+            return rad;
+        }
+        public static float ConvertDirectionToRadian(sbyte rotation)
+        {
+            var z = rotation * 0.0078740157; // переводим из направления в радианы
+            z *= Math.PI * 2;
+
+            return (float)z;
+        }
+        public static float ConvertDirectionToRadian(short rotation)
+        {
+            var z = rotation * 0.000030518509; // переводим из направления в радианы
+            z *= Math.PI * 2;
+
+            return (float)z;
         }
     }
 }

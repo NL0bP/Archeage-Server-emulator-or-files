@@ -1,10 +1,11 @@
-using AAEmu.Commons.Utils;
+﻿using AAEmu.Commons.Utils;
 
 namespace AAEmu.Game.Models
 {
     public class AppConfiguration : Singleton<AppConfiguration>
     {
         public byte Id { get; set; }
+        public bool AutoAccount { get; set; }
         public byte[] AdditionalesId { get; set; } = new byte[0];
         public string SecretKey { get; set; }
         public DBConnections Connections { get; set; }
@@ -13,6 +14,7 @@ namespace AAEmu.Game.Models
         public NetworkConfig LoginNetwork { get; set; }
         public string CharacterNameRegex { get; set; }
         public int MaxConcurencyThreadPool { get; set; }
+        public bool HeightMapsEnable { get; set; }
 
         public class NetworkConfig
         {

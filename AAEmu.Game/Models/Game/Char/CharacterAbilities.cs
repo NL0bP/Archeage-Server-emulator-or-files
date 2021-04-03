@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+
 using AAEmu.Game.Core.Packets.G2C;
 using AAEmu.Game.Models.Game.Skills;
+using AAEmu.Game.Models.Game.Skills.Static;
 using MySql.Data.MySqlClient;
 
 namespace AAEmu.Game.Models.Game.Char
@@ -16,7 +18,7 @@ namespace AAEmu.Game.Models.Game.Char
             Abilities = new Dictionary<AbilityType, Ability>();
             for (var i = 1; i < 13; i++) //1.2 = 10 ability, 3.0.3.0 = 12 ability
             {
-                var id = (AbilityType) i;
+                var id = (AbilityType)i;
                 Abilities[id] = new Ability(id);
             }
         }
@@ -69,11 +71,33 @@ namespace AAEmu.Game.Models.Game.Char
             {
                 Owner.Ability2 = abilityId;
                 Abilities[abilityId].Order = 1;
+
+                //This sets are current ability level to match ability1 since its suppost to be in sync
+                if (oldAbilityId == AbilityType.None)
+                {
+                    Abilities[Owner.Ability2].Exp = Abilities[Owner.Ability1].Exp;
+                }
             }
             else if (Owner.Ability3 == oldAbilityId)
             {
                 Owner.Ability3 = abilityId;
                 Abilities[abilityId].Order = 2;
+
+                if (oldAbilityId == AbilityType.None)
+                {
+                    Abilities[Owner.Ability3].Exp = Abilities[Owner.Ability1].Exp;
+
+                    //every unchosen ability is default level 10 besides are selected ones since spillover exp can unsync character exp with skill exp
+                    var c = GetActiveAbilities();
+                    for (var i = 1; i < Abilities.Count; i++)
+                    {
+                        var id = (AbilityType)i;
+                        if (!c.Contains(Abilities[id].Id))
+                        {
+                            Abilities[id].Exp = 42000;
+                        }
+                    }
+                }
             }
 
             if (oldAbilityId != AbilityType.None)
@@ -93,7 +117,7 @@ namespace AAEmu.Game.Models.Game.Char
                     {
                         var ability = new Ability
                         {
-                            Id = (AbilityType) reader.GetByte("id"),
+                            Id = (AbilityType)reader.GetByte("id"),
                             Exp = reader.GetInt32("exp")
                         };
                         if (ability.Id == Owner.Ability1)
@@ -118,7 +142,7 @@ namespace AAEmu.Game.Models.Game.Char
                     command.Transaction = transaction;
 
                     command.CommandText = "REPLACE INTO abilities(`id`,`exp`,`owner`) VALUES (@id, @exp, @owner)";
-                    command.Parameters.AddWithValue("@id", (byte) ability.Id);
+                    command.Parameters.AddWithValue("@id", (byte)ability.Id);
                     command.Parameters.AddWithValue("@exp", ability.Exp);
                     command.Parameters.AddWithValue("@owner", Owner.Id);
                     command.ExecuteNonQuery();

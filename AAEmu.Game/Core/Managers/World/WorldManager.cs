@@ -6,14 +6,19 @@ using System.Linq;
 using AAEmu.Commons.IO;
 using AAEmu.Commons.Utils;
 using AAEmu.Game.Core.Network.Game;
+using AAEmu.Game.Models;
 using AAEmu.Game.Models.Game.Char;
 using AAEmu.Game.Models.Game.DoodadObj;
 using AAEmu.Game.Models.Game.NPChar;
 using AAEmu.Game.Models.Game.Units;
 using AAEmu.Game.Models.Game.World;
 using AAEmu.Game.Utils.DB;
+using AAEmu.Game.Core.Packets.G2C;
+using AAEmu.Game.Models.Game.Gimmicks;
 using NLog;
 using InstanceWorld = AAEmu.Game.Models.Game.World.World;
+using AAEmu.Game.Models.Game.Housing;
+using AAEmu.Game.Models.Game.Shipyard;
 
 namespace AAEmu.Game.Core.Managers.World
 {
@@ -24,16 +29,24 @@ namespace AAEmu.Game.Core.Managers.World
         private Dictionary<uint, InstanceWorld> _worlds;
         private Dictionary<uint, uint> _worldIdByZoneId;
         private Dictionary<uint, WorldInteractionGroup> _worldInteractionGroups;
-
+        public bool IsSnowing = false;
         private readonly ConcurrentDictionary<uint, GameObject> _objects;
         private readonly ConcurrentDictionary<uint, BaseUnit> _baseUnits;
         private readonly ConcurrentDictionary<uint, Unit> _units;
         private readonly ConcurrentDictionary<uint, Doodad> _doodads;
         private readonly ConcurrentDictionary<uint, Npc> _npcs;
         private readonly ConcurrentDictionary<uint, Character> _characters;
+        private readonly ConcurrentDictionary<uint, Transfer> _transfers;
+        private readonly ConcurrentDictionary<uint, Gimmick> _gimmicks;
 
         public const int REGION_SIZE = 64;
         public const int CELL_SIZE = 1024 / REGION_SIZE;
+        /*
+        REGION_NEIGHBORHOOD_SIZE (cell sector size) used for polling objects in your proximity
+        Was originally set to 1, recommended 3 and max 5
+        anything higher is overkill as you can't target it anymore in the client at that distance
+        */
+        public const sbyte REGION_NEIGHBORHOOD_SIZE = 3;
 
         public WorldManager()
         {
@@ -43,6 +56,8 @@ namespace AAEmu.Game.Core.Managers.World
             _doodads = new ConcurrentDictionary<uint, Doodad>();
             _npcs = new ConcurrentDictionary<uint, Npc>();
             _characters = new ConcurrentDictionary<uint, Character>();
+            _transfers = new ConcurrentDictionary<uint, Transfer>();
+            _gimmicks = new ConcurrentDictionary<uint, Gimmick>();
         }
 
         public WorldInteractionGroup? GetWorldInteractionGroup(uint worldInteractionType)
@@ -114,8 +129,7 @@ namespace AAEmu.Game.Core.Managers.World
                     throw new Exception($"WorldManager: Parse {pathFile} file");
             }
 
-            var active = false; //TODO add config
-            if (active) // TODO fastboot if active = false!
+            if (AppConfiguration.Instance.HeightMapsEnable) // TODO fastboot if HeightMapsEnable = false!
             {
                 _log.Info("Loading heightmaps...");
 
@@ -142,21 +156,21 @@ namespace AAEmu.Game.Core.Managers.World
                             if (hMapCellX == world.CellX && hMapCellY == world.CellY)
                             {
                                 for (var cellX = 0; cellX < world.CellX; cellX++)
-                                for (var cellY = 0; cellY < world.CellY; cellY++)
-                                {
-                                    if (br.ReadBoolean())
-                                        continue;
-                                    for (var i = 0; i < 16; i++)
-                                    for (var j = 0; j < 16; j++)
-                                    for (var x = 0; x < 32; x++)
-                                    for (var y = 0; y < 32; y++)
+                                    for (var cellY = 0; cellY < world.CellY; cellY++)
                                     {
-                                        var sx = cellX * 512 + i * 32 + x;
-                                        var sy = cellY * 512 + j * 32 + y;
+                                        if (br.ReadBoolean())
+                                            continue;
+                                        for (var i = 0; i < 16; i++)
+                                            for (var j = 0; j < 16; j++)
+                                                for (var x = 0; x < 32; x++)
+                                                    for (var y = 0; y < 32; y++)
+                                                    {
+                                                        var sx = cellX * 512 + i * 32 + x;
+                                                        var sy = cellY * 512 + j * 32 + y;
 
-                                        world.HeightMaps[sx, sy] = br.ReadUInt16();
+                                                        world.HeightMaps[sx, sy] = br.ReadUInt16();
+                                                    }
                                     }
-                                }
                             }
                             else
                                 _log.Warn("{0}: Invalid heightmap cells...", world.Name);
@@ -217,20 +231,33 @@ namespace AAEmu.Game.Core.Managers.World
 
         public float GetHeight(uint zoneId, float x, float y)
         {
-            var world = GetWorldByZone(zoneId);
-            return world?.GetHeight(x, y) ?? 0f;
+            try
+            {
+                var world = GetWorldByZone(zoneId);
+                return world?.GetHeight(x, y) ?? 0f;
+            }
+            catch
+            {
+                return 0f;
+            }
+        }
+
+        private GameObject GetRootObj(GameObject obj)
+        {
+            if (obj.ParentObj == null)
+            {
+                return obj;
+            }
+            else
+            {
+                return GetRootObj(obj.ParentObj);
+            }
         }
 
         public Region GetRegion(GameObject obj)
         {
-            InstanceWorld world;
-            if (obj.Position.Relative)
-            {
-                world = GetWorld(obj.WorldPosition.WorldId);
-                return GetRegion(world, obj.WorldPosition.X, obj.WorldPosition.Y);
-            }
-
-            world = GetWorld(obj.Position.WorldId);
+            obj = GetRootObj(obj);
+            InstanceWorld world = GetWorld(obj.Position.WorldId);
             return GetRegion(world, obj.Position.X, obj.Position.Y);
         }
 
@@ -244,8 +271,8 @@ namespace AAEmu.Game.Core.Managers.World
             var world = _worlds[worldId];
 
             var result = new List<Region>();
-            for (var a = -1; a <= 1; a++)
-                for (var b = -1; b <= 1; b++)
+            for (var a = -REGION_NEIGHBORHOOD_SIZE; a <= REGION_NEIGHBORHOOD_SIZE; a++)
+                for (var b = -REGION_NEIGHBORHOOD_SIZE; b <= REGION_NEIGHBORHOOD_SIZE; b++)
                     if (ValidRegion(world.Id, x + a, y + b) && world.Regions[x + a, y + b] != null)
                         result.Add(world.Regions[x + a, y + b]);
 
@@ -284,6 +311,31 @@ namespace AAEmu.Game.Core.Managers.World
             return null;
         }
 
+        /// <summary>
+        /// Returns a player Character object based on the parameters.
+        /// Priority is TargetName > CurrentTarget > character
+        /// </summary>
+        /// <param name="character">Source character</param>
+        /// <param name="TargetName">Possible target name</param>
+        /// <param name="FirstNonNameArgument">Returns 1 if TargetName was a valid online character, 0 otherwise</param>
+        /// <returns></returns>
+        public Character GetTargetOrSelf(Character character, string TargetName, out int FirstNonNameArgument)
+        {
+            FirstNonNameArgument = 0;
+            if ((TargetName != null) && (TargetName != string.Empty))
+            {
+                Character player = WorldManager.Instance.GetCharacter(TargetName);
+                if (player != null)
+                {
+                    FirstNonNameArgument = 1;
+                    return player;
+                }
+            }
+            if ((character.CurrentTarget != null) && (character.CurrentTarget is Character))
+                return (Character)character.CurrentTarget;
+            return character;
+        }
+
         public Character GetCharacterByObjId(uint id)
         {
             _characters.TryGetValue(id, out var ret);
@@ -293,7 +345,7 @@ namespace AAEmu.Game.Core.Managers.World
         public Character GetCharacterById(uint id)
         {
             foreach (var player in _characters.Values)
-                if (player.Id.Equals(id)) 
+                if (player.Id.Equals(id))
                     return player;
             return null;
         }
@@ -315,6 +367,10 @@ namespace AAEmu.Game.Core.Managers.World
                 _npcs.TryAdd(npc.ObjId, npc);
             if (obj is Character character)
                 _characters.TryAdd(character.ObjId, character);
+            if (obj is Transfer transfer)
+                _transfers.TryAdd(transfer.ObjId, transfer);
+            if (obj is Gimmick gimmick)
+                _gimmicks.TryAdd(gimmick.ObjId, gimmick);
         }
 
         public void RemoveObject(GameObject obj)
@@ -334,6 +390,10 @@ namespace AAEmu.Game.Core.Managers.World
                 _npcs.TryRemove(obj.ObjId, out _);
             if (obj is Character)
                 _characters.TryRemove(obj.ObjId, out _);
+            if (obj is Transfer)
+                _transfers.TryRemove(obj.ObjId, out _);
+            if (obj is Gimmick)
+                _gimmicks.TryRemove(obj.ObjId, out _);
         }
 
         public void AddVisibleObject(GameObject obj)
@@ -432,6 +492,21 @@ namespace AAEmu.Game.Core.Managers.World
             return result;
         }
 
+        public List<T> GetAround<T>(GameObject obj, float radius, int limit) where T : class
+        {
+            var result = new List<T>();
+            if (obj.Region == null)
+                return result;
+
+            foreach (var neighbor in obj.Region.GetNeighbors())
+                neighbor.GetList(result, obj.ObjId, obj.Position.X, obj.Position.Y, radius * radius);
+
+            if (result.Count > limit)
+                result.RemoveRange(limit - 1, result.Count - limit - 1);
+
+            return result;
+        }
+
         public List<T> GetInCell<T>(uint worldId, int x, int y) where T : class
         {
             var result = new List<T>();
@@ -448,21 +523,40 @@ namespace AAEmu.Game.Core.Managers.World
             return result;
         }
 
+        [Obsolete("Please use ChatManager.Instance.GetNationChat(race).SendPacker(packet) instead.")]
         public void BroadcastPacketToNation(GamePacket packet, Race race)
         {
+            var mRace = (((byte)race - 1) & 0xFC); // some bit magic that makes raceId into some kind of birth continent id
             foreach (var character in _characters.Values)
             {
-                if (character.Race != race)
+                var cmRace = (((byte)character.Race - 1) & 0xFC);
+                if (mRace != cmRace)
                     continue;
                 character.SendPacket(packet);
             }
         }
 
-        public void BroadcastPacketToFaction(GamePacket packet, uint factionId)
+        [Obsolete("Please use ChatManager.Instance.GetFactionChat(factionMotherId).SendPacker(packet) instead.")]
+        public void BroadcastPacketToFaction(GamePacket packet, uint factionMotherId)
         {
             foreach (var character in _characters.Values)
             {
-                if (character.Faction.Id != factionId)
+                if (character.Faction.MotherId != factionMotherId)
+                    continue;
+                character.SendPacket(packet);
+            }
+        }
+
+        [Obsolete("Please use ChatManager.Instance.GetZoneChat(zoneKey).SendPacker(packet) instead.")]
+        public void BroadcastPacketToZone(GamePacket packet, uint zoneKey)
+        {
+            // First find the zone group, so functions like /shout work in larger zones that use multiple zone keys
+            var zone = ZoneManager.Instance.GetZoneByKey(zoneKey);
+            var zoneGroupId = zone?.GroupId ?? 0;
+            var validZones = ZoneManager.Instance.GetZoneKeysInZoneGroupById(zoneGroupId);
+            foreach (var character in _characters.Values)
+            {
+                if (!validZones.Contains(character.Position.ZoneId))
                     continue;
                 character.SendPacket(packet);
             }
@@ -495,6 +589,69 @@ namespace AAEmu.Game.Core.Managers.World
         {
             var world = _worlds[worldId];
             return world.ValidRegion(x, y);
+        }
+
+        public void OnPlayerJoin(Character character)
+        {
+            //turn snow on off 
+            Snow(character);
+
+            //family stuff
+            if (character.Family > 0)
+            {
+                FamilyManager.Instance.OnCharacterLogin(character);
+            }
+        }
+
+        public void Snow(Character character)
+        {
+            //send the char the packet
+            character.SendPacket(new SCOnOffSnowPacket(IsSnowing));
+
+        }
+
+        public void ResendVisibleObjectsToCharacter(Character character)
+        {
+            // Re-send visible flags to character getting out of cinema
+            var stuffs = WorldManager.Instance.GetAround<Unit>(character, 1000f);
+            foreach (var stuff in stuffs)
+            {
+                switch (stuff)
+                {
+                    case Character chr:
+                        character.SendPacket(new SCUnitStatePacket(chr));
+                        break;
+                    case Slave slave:
+                        character.SendPacket(new SCUnitStatePacket(slave));
+                        break;
+                    case House house:
+                        character.SendPacket(new SCHouseStatePacket(house));
+                        break;
+                    case Transfer transfer:
+                        character.SendPacket(new SCUnitStatePacket(transfer));
+                        break;
+                    case Mount mount:
+                        character.SendPacket(new SCUnitStatePacket(mount));
+                        break;
+                    case Shipyard shipyard:
+                        character.SendPacket(new SCUnitStatePacket(shipyard));
+                        break;
+                }
+            }
+
+            var doodads = WorldManager.Instance.GetAround<Doodad>(character, 1000f).ToArray();
+            for (var i = 0; i < doodads.Length; i += 30)
+            {
+                var count = doodads.Length - i;
+                var temp = new Doodad[count <= 30 ? count : 30];
+                Array.Copy(doodads, i, temp, 0, temp.Length);
+                character.SendPacket(new SCDoodadsCreatedPacket(temp));
+            }
+        }
+
+        public List<Character> GetAllCharacters()
+        {
+            return _characters.Values.ToList();
         }
     }
 }

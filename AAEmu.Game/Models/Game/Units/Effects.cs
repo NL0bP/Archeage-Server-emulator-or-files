@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using AAEmu.Game.Core.Managers;
 using AAEmu.Game.Models.Game.Skills;
 using AAEmu.Game.Models.Game.Skills.Effects;
+using AAEmu.Game.Models.Game.Skills.Static;
 using AAEmu.Game.Models.Game.Skills.Templates;
 
 namespace AAEmu.Game.Models.Game.Units
@@ -39,17 +41,17 @@ namespace AAEmu.Game.Models.Game.Units
                     case BuffTemplate template when template.ImmuneBuffTagId == 0:
                         return false;
                     case BuffTemplate template:
-                    {
-                        var buffs = SkillManager.Instance.GetBuffsByTagId(template.ImmuneBuffTagId);
-                        return buffs != null && buffs.Contains(buffId);
-                    }
+                        {
+                            var buffs = SkillManager.Instance.GetBuffsByTagId(template.ImmuneBuffTagId);
+                            return buffs != null && buffs.Contains(buffId);
+                        }
                     case BuffEffect buffEffect when buffEffect.Buff.ImmuneBuffTagId == 0:
                         return false;
                     case BuffEffect buffEffect:
-                    {
-                        var buffs = SkillManager.Instance.GetBuffsByTagId(buffEffect.Buff.ImmuneBuffTagId);
-                        return buffs != null && buffs.Contains(buffId);
-                    }
+                        {
+                            var buffs = SkillManager.Instance.GetBuffsByTagId(buffEffect.Buff.ImmuneBuffTagId);
+                            return buffs != null && buffs.Contains(buffId);
+                        }
                 }
             }
 
@@ -146,6 +148,9 @@ namespace AAEmu.Game.Models.Game.Units
 
         public void AddEffect(Effect effect)
         {
+            if (effect.Template == null)
+                return;
+
             lock (_lock)
             {
                 var owner = GetOwner();
@@ -165,33 +170,43 @@ namespace AAEmu.Game.Models.Game.Units
                     effect.EndTime = effect.StartTime.AddMilliseconds(effect.Duration);
                 }
 
+                // Special case for fear, which is negative somehow ??
+                if (effect.Duration < 0)
+                {
+                    effect.EndTime = effect.StartTime.AddMilliseconds(-effect.Duration);
+                }
+
                 switch (effect.Template)
                 {
                     case BuffTemplate buffTemplate:
-                    {
-                        Effect last = null;
-                        if (buffTemplate.MaxStack > 0 && GetBuffCountById(effect.Template.BuffId) >= buffTemplate.MaxStack)
-                            foreach (var e in new List<Effect>(_effects))
-                                if (e != null && e.InUse && e.Template.BuffId == effect.Template.BuffId)
-                                    if (e.GetTimeLeft() < effect.GetTimeLeft())
-                                        last = e;
-                        last?.Exit();
-                        break;
-                    }
+                        {
+                            Effect last = null;
+                            if (buffTemplate.MaxStack > 0 && GetBuffCountById(effect.Template.BuffId) >= buffTemplate.MaxStack)
+                                foreach (var e in new List<Effect>(_effects))
+                                    if (e != null && e.InUse && e.Template.BuffId == effect.Template.BuffId)
+                                        if (e.GetTimeLeft() < effect.GetTimeLeft())
+                                            last = e;
+                            last?.Exit();
+                            break;
+                        }
                     case BuffEffect buffEffect:
-                    {
-                        Effect last = null;
-                        if (buffEffect.Buff.MaxStack > 0 && GetBuffCountById(effect.Template.BuffId) >= buffEffect.Buff.MaxStack)
-                            foreach (var e in new List<Effect>(_effects))
-                                if (e != null && e.InUse && e.Template.BuffId == effect.Template.BuffId)
-                                    if (last == null || e.GetTimeLeft() < last.GetTimeLeft())
-                                        last = e;
-                        last?.Exit();
-                        break;
-                    }
+                        {
+                            Effect last = null;
+                            if (buffEffect.Buff.MaxStack > 0 && GetBuffCountById(effect.Template.BuffId) >= buffEffect.Buff.MaxStack)
+                                foreach (var e in new List<Effect>(_effects))
+                                    if (e != null && e.InUse && e.Template.BuffId == effect.Template.BuffId)
+                                        if (last == null || e.GetTimeLeft() < last.GetTimeLeft())
+                                            last = e;
+                            last?.Exit();
+                            break;
+                        }
                 }
 
                 _effects.Add(effect);
+
+                if (effect.Template.BuffId > 0)
+                    owner.Modifiers.AddModifiers(effect.Template.BuffId);
+
                 if (effect.Duration > 0)
                     effect.SetInUse(true, false);
                 else
@@ -200,6 +215,8 @@ namespace AAEmu.Game.Models.Game.Units
                     effect.State = EffectState.Acting;
                     effect.Template.Start(effect.Caster, owner, effect); // TODO поменять на target
                 }
+
+                //effect.SkillCaster.ObjId = owner.ObjId; // add 10.08.2020
             }
         }
 
@@ -216,6 +233,7 @@ namespace AAEmu.Game.Models.Game.Units
 
                 effect.SetInUse(false, false);
                 _effects.Remove(effect);
+                own.Modifiers.RemoveModifiers(effect.Template.BuffId);
             }
         }
 
@@ -234,6 +252,7 @@ namespace AAEmu.Game.Models.Game.Units
                         e.Template.Dispel(e.Caster, e.Owner, e);
                         _effects.Remove(e);
                         e.SetInUse(false, false);
+                        own.Modifiers.RemoveModifiers(e.Template.BuffId);
                     }
                 }
             }
@@ -254,6 +273,7 @@ namespace AAEmu.Game.Models.Game.Units
                         e.Template.Dispel(e.Caster, e.Owner, e);
                         _effects.Remove(e);
                         e.SetInUse(false, false);
+                        own.Modifiers.RemoveModifiers(e.Template.BuffId);
                         break;
                     }
                 }
@@ -266,7 +286,7 @@ namespace AAEmu.Game.Models.Game.Units
             if (own == null)
                 return;
 
-            if (_effects == null) 
+            if (_effects == null)
                 return;
             foreach (var e in new List<Effect>(_effects))
             {
@@ -275,6 +295,7 @@ namespace AAEmu.Game.Models.Game.Units
                     e.Template.Dispel(e.Caster, e.Owner, e);
                     _effects.Remove(e);
                     e.SetInUse(false, false);
+                    own.Modifiers.RemoveModifiers(e.Template.BuffId);
                     break;
                 }
             }
@@ -306,33 +327,40 @@ namespace AAEmu.Game.Models.Game.Units
         {
             var own = GetOwner();
             if (own == null)
-            {
                 return;
-            }
+
             foreach (var e in new List<Effect>(_effects))
                 if (e != null /* && (e.Template.Skill == null || e.Template.Skill.Type != SkillTypes.Passive)*/)
-                {
                     e.Exit();
-                }
         }
 
         public void RemoveEffectsOnDeath()
         {
             var own = GetOwner();
             if (own == null)
-            {
                 return;
-            }
+
             foreach (var e in new List<Effect>(_effects))
-                if (e != null && (e.Template is BuffTemplate template && template.RemoveOnDeath || e.Template is BuffEffect effect && effect.Buff.RemoveOnDeath))
-                {
+                if (e != null && (e.Template is BuffTemplate template && template.RemoveOnDeath ||
+                                  e.Template is BuffEffect effect && effect.Buff.RemoveOnDeath))
                     e.Exit();
-                }
         }
 
         public void SetOwner(BaseUnit owner)
         {
             _owner = owner == null ? null : new WeakReference(owner);
+        }
+
+        public void RemoveStealth()
+        {
+            var own = GetOwner();
+            if (own == null)
+                return;
+
+            foreach (var e in new List<Effect>(_effects))
+                if (e != null && (e.Template is BuffTemplate template && template.Stealth ||
+                                  e.Template is BuffEffect effect && effect.Buff.Stealth))
+                    e.Exit();
         }
 
         private BaseUnit GetOwner()

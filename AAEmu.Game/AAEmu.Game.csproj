@@ -33,6 +33,12 @@
         <None Include="Scripts\**\**" CopyToOutputDirectory="PreserveNewest" LinkBase="Scripts\" />
         <None Include="Data\**\**" CopyToOutputDirectory="PreserveNewest" LinkBase="Data\" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Remove="Core\Helper\InventoryHelper.cs" />
+      <Compile Remove="Core\Managers\DuelManager.cs" />
+      <Compile Remove="Core\Managers\Id\DuelIdManager.cs" />
+    </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Jace" Version="0.9.2" />
@@ -47,6 +53,10 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="2.2.0" />
         <PackageReference Include="NLog" Version="4.5.11" />
         <PackageReference Include="Quartz" Version="3.0.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Core\Helper\" />
     </ItemGroup>
 
 </Project>

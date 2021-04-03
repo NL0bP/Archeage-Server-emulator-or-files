@@ -1,4 +1,4 @@
-using AAEmu.Game.Models.Game.Formulas;
+﻿using AAEmu.Game.Models.Game.Formulas;
 
 namespace AAEmu.Game.Models.Game.Items
 {
@@ -18,6 +18,7 @@ namespace AAEmu.Game.Models.Game.Items
         public Formula FormulaDps { get; set; }
         public Formula FormulaMDps { get; set; }
         public Formula FormulaArmor { get; set; }
+        public Formula FormulaHDps { get; set; }
         public int MinRange { get; set; }
         public int SheathePriority { get; set; }
         public float DurabilityRatio { get; set; }

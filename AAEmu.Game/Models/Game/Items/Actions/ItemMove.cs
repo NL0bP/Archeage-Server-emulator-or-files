@@ -36,6 +36,7 @@ namespace AAEmu.Game.Models.Game.Items.Actions
             stream.Write(_toItemId); // i2
 
             stream.Write(0); //flags
+
             return stream;
         }
     }

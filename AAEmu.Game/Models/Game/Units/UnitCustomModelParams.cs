@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+
 using AAEmu.Commons.Network;
 
 namespace AAEmu.Game.Models.Game.Units
@@ -32,6 +33,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             stream.Write(AssetId);
             stream.Write(AssetWeight);
+
             return stream;
         }
     }
@@ -44,9 +46,7 @@ namespace AAEmu.Game.Models.Game.Units
         public float MovableDecalRotate { get; set; }
         public short MovableDecalMoveX { get; set; }
         public short MovableDecalMoveY { get; set; }
-
         public FixedDecalAsset[] FixedDecalAsset { get; }
-
         public uint DiffuseMapId { get; set; }
         public uint NormalMapId { get; set; }
         public uint EyelashMapId { get; set; }
@@ -56,7 +56,6 @@ namespace AAEmu.Game.Models.Game.Units
         public uint RightPupilColor { get; set; }
         public uint EyebrowColor { get; set; }
         public uint DecoColor { get; set; }
-
         public byte[] Modifier { get; set; }
 
         public FaceModel()
@@ -93,25 +92,6 @@ namespace AAEmu.Game.Models.Game.Units
             MovableDecalMoveX = stream.ReadInt16();    // moveX
             MovableDecalMoveY = stream.ReadInt16();    // moveY
 
-
-            // почему-то нет такого в 3+
-            //цикл 4 раза
-            //foreach (var asset in FixedDecalAsset)
-            //    asset.Read(stream);
-            //---------------------------------------
-            // for 3.0.3.0
-            // --- begin pish
-            //var hcount = 6;
-            //do
-            //{
-            //    var pcount = 4;
-            //    if (hcount < 4) { pcount = hcount; }
-            //    m_assets = stream.ReadPisc(pcount);
-            //    hcount -= pcount;
-            //} while (hcount > 0);
-            // --- end pish
-            
-            // замена вышенаписанному коду
             // --- begin pish
             var mAssets = stream.ReadPisc(4);
             // --- end pish
@@ -129,6 +109,9 @@ namespace AAEmu.Game.Models.Game.Units
             // --- begin pish
             var mMap = stream.ReadPisc(3);
             // --- end pish
+            DiffuseMapId = (uint)mMap[0];
+            NormalMapId = (uint)mMap[1];
+            EyelashMapId = (uint)mMap[2];
 
             // for 3.0.3.0
             for (var i = 0; i < 6; i++)
@@ -136,38 +119,24 @@ namespace AAEmu.Game.Models.Game.Units
                 FixedDecalAsset[i].AssetWeight = stream.ReadSingle(); // weight
             }
 
-            // почему-то нет такого в 3+
-            //DiffuseMapId = stream.ReadUInt32();
-            //NormalMapId = stream.ReadUInt32();
-            //EyelashMapId = stream.ReadUInt32();
-            DiffuseMapId = (uint)mMap[0];
-            NormalMapId = (uint)mMap[1];
-            EyelashMapId = (uint)mMap[2];
-
-            NormalMapWeight = stream.ReadSingle();
+            NormalMapWeight = stream.ReadSingle();    // weight
             LipColor = stream.ReadUInt32();           // lip
             LeftPupilColor = stream.ReadUInt32();     // leftPupil
             RightPupilColor = stream.ReadUInt32();    // rightPupil
             EyebrowColor = stream.ReadUInt32();       // eyebrow
             DecoColor = stream.ReadUInt32();          // deco
 
-            Modifier = stream.ReadBytes();
+            Modifier = stream.ReadBytes();            // modifiers
         }
 
         public override PacketStream Write(PacketStream stream)
         {
-            stream.Write(MovableDecalAssetId);
-            stream.Write(MovableDecalWeight);
-            stream.Write(MovableDecalScale);
-            stream.Write(MovableDecalRotate);
-            stream.Write(MovableDecalMoveX);
-            stream.Write(MovableDecalMoveY);
-
-            //for 1.2
-            //foreach (var asset in FixedDecalAsset)
-            //    stream.Write(asset);
-
-            //for 3.0.3.0
+            stream.Write(MovableDecalAssetId); // type
+            stream.Write(MovableDecalWeight);  // weight
+            stream.Write(MovableDecalScale);   // scale
+            stream.Write(MovableDecalRotate);  // rotate
+            stream.Write(MovableDecalMoveX);   // moveX
+            stream.Write(MovableDecalMoveY);   // moveY
             stream.WritePisc(FixedDecalAsset[0].AssetId, FixedDecalAsset[1].AssetId, FixedDecalAsset[2].AssetId, FixedDecalAsset[3].AssetId);
             stream.WritePisc(FixedDecalAsset[4].AssetId, FixedDecalAsset[5].AssetId);
             stream.WritePisc(DiffuseMapId, NormalMapId, EyelashMapId);
@@ -175,17 +144,15 @@ namespace AAEmu.Game.Models.Game.Units
             {
                 stream.Write(FixedDecalAsset[i].AssetWeight); // weight
             }
-            //stream.Write(DiffuseMapId);
-            //stream.Write(NormalMapId);
-            //stream.Write(EyelashMapId);
-            stream.Write(NormalMapWeight);
-            stream.Write(LipColor);
-            stream.Write(LeftPupilColor);
-            stream.Write(RightPupilColor);
-            stream.Write(EyebrowColor);
-            stream.Write(DecoColor);
+            stream.Write(NormalMapWeight); // weight
+            stream.Write(LipColor);        // lip
+            stream.Write(LeftPupilColor);  // leftPupil
+            stream.Write(RightPupilColor); // rightPupil
+            stream.Write(EyebrowColor);    // eyebrow
+            stream.Write(DecoColor);       // deco
 
-            stream.Write(Modifier, true);
+            stream.Write(Modifier, true);            // modifiers
+
             return stream;
         }
     }
@@ -193,13 +160,17 @@ namespace AAEmu.Game.Models.Game.Units
     public class UnitCustomModelParams : PacketMarshaler
     {
         private UnitCustomModelType _type;
-
+        public uint ModelId { get; private set; }
+        public uint BodyNormalMapId { get; private set; }
         public uint HairColorId { get; private set; }
+        public uint HornColorId { get; private set; }
         public uint SkinColorId { get; private set; }
-        //public uint UnkId { get; private set; } // TODO ...
-        public float UnkId { get; private set; } // TODO ...
-
+        public float BodyNormalMapWeight { get; private set; }
         public FaceModel Face { get; private set; }
+        public uint DefaultHairColor { get; private set; }
+        public uint TwoToneHair { get; private set; }
+        public float TwoToneFirstWidth { get; private set; }
+        public float TwoToneSecondWidth { get; private set; }
 
         public UnitCustomModelParams(UnitCustomModelType type = UnitCustomModelType.None)
         {
@@ -211,6 +182,17 @@ namespace AAEmu.Game.Models.Game.Units
             _type = type;
             if (_type == UnitCustomModelType.Face)
                 Face = new FaceModel();
+            return this;
+        }
+        public UnitCustomModelParams SetModelId(uint modelId)
+        {
+            ModelId = modelId;
+            return this;
+        }
+
+        public UnitCustomModelParams SetBodyNormalMapId(uint bodyNormalMapId)
+        {
+            BodyNormalMapId = bodyNormalMapId;
             return this;
         }
 
@@ -234,29 +216,26 @@ namespace AAEmu.Game.Models.Game.Units
 
         public override void Read(PacketStream stream)
         {
-            SetType((UnitCustomModelType) stream.ReadByte()); // ext
+            SetType((UnitCustomModelType)stream.ReadByte()); // ext
 
             if (_type == UnitCustomModelType.None)
                 return;
 
             // Hair
-            HairColorId = stream.ReadUInt32(); // HairColorId
-
-            stream.ReadUInt32(); // type for 3.0.3.0
-            stream.ReadUInt32();  // defaultHairColor for 3.0.3.0
-            stream.ReadUInt32(); // twoToneHair for 3.0.3.0
-            stream.ReadSingle(); // twoToneFirstWidth for 3.0.3.0
-            stream.ReadSingle(); // twoToneSecondWidth for 3.0.3.0
+            HairColorId = stream.ReadUInt32();        // HairColorId type
+            HornColorId = stream.ReadUInt32();        // HornColorId type for 3.0.3.0
+            DefaultHairColor = stream.ReadUInt32();   // defaultHairColor for 3.0.3.0
+            TwoToneHair = stream.ReadUInt32();        // twoToneHair for 3.0.3.0
+            TwoToneFirstWidth = stream.ReadSingle();  // twoToneFirstWidth for 3.0.3.0
+            TwoToneSecondWidth = stream.ReadSingle(); // twoToneSecondWidth for 3.0.3.0
 
             if (_type == UnitCustomModelType.Hair)
                 return;
 
-            SkinColorId = stream.ReadUInt32();
-            stream.ReadUInt32(); // type for 3.0.3.0
-            stream.ReadUInt32(); // type for 3.0.3.0
-            // Skin
-            //UnkId = stream.ReadUInt32();
-            UnkId = stream.ReadSingle(); // weight
+            SkinColorId = stream.ReadUInt32();          // type
+            ModelId = stream.ReadUInt32();              // type for 3.0.3.0
+            BodyNormalMapId = stream.ReadUInt32();      // type for 3.0.3.0
+            BodyNormalMapWeight = stream.ReadSingle();  // weight
 
             if (_type == UnitCustomModelType.Skin)
                 return;
@@ -267,27 +246,25 @@ namespace AAEmu.Game.Models.Game.Units
 
         public override PacketStream Write(PacketStream stream)
         {
-            stream.Write((byte) _type); // ext
+            stream.Write((byte)_type); // ext
 
             if (_type == UnitCustomModelType.None)
                 return stream;
 
-            stream.Write(HairColorId);
-
-            // for 3.0.3.0
-            stream.Write(0);  // type for 3.0.3.0
-            stream.Write(0);  // defaultHairColor for 3.0.3.0
-            stream.Write(0);  // twoToneHair for 3.0.3.0
-            stream.Write(0f); // twoToneFirstWidth for 3.0.3.0
-            stream.Write(0f); // twoToneSecondWidth for 3.0.3.0
+            stream.Write(HairColorId);        // type
+            stream.Write(HornColorId);        // type for 3.0.3.0
+            stream.Write(DefaultHairColor);   // defaultHairColor for 3.0.3.0
+            stream.Write(TwoToneHair);        // twoToneHair for 3.0.3.0
+            stream.Write(TwoToneFirstWidth);  // twoToneFirstWidth for 3.0.3.0
+            stream.Write(TwoToneSecondWidth); // twoToneSecondWidth for 3.0.3.0
 
             if (_type == UnitCustomModelType.Hair)
                 return stream;
 
-            stream.Write(SkinColorId);
-            stream.Write(0);  // type for 3.0.3.0
-            stream.Write(0);  // type for 3.0.3.0
-            stream.Write(UnkId); // weight
+            stream.Write(SkinColorId);          // type
+            stream.Write(0u);                   // type for 3.0.3.0
+            stream.Write(BodyNormalMapId);      // type for 3.0.3.0
+            stream.Write(BodyNormalMapWeight);  // weight
 
             if (_type == UnitCustomModelType.Skin)
                 return stream;

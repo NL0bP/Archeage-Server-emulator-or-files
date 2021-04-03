@@ -17,10 +17,10 @@ namespace AAEmu.Game.Core.Packets.G2C
         public override PacketStream Write(PacketStream stream)
         {
             stream.Write(_character.InstanceId); // instanceId (iid)
-            stream.Write(_character.Guid); // guid
-            stream.Write(0); // rwd
+            stream.Write(_character.Guid);       // guid
+            stream.Write(0);                     // rwd
 
-            _character.Write(stream); //Character_List_Packet_48B0
+            _character.Write(stream);            //Character_List_Packet_48B0
 
             stream.Write(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDB, 0xFB, 0x17, 0xC0}); //angles
             stream.Write(_character.Expirience);     // exp
@@ -35,13 +35,13 @@ namespace AAEmu.Game.Core.Packets.G2C
                 stream.Write((uint)0);               // abilityExp
             }
 
-            stream.Write(0);                        // totalSentMail
-            stream.Write(0);                        // totalMail
-            stream.Write(0);                        // totalMiaMail
-            stream.Write(0);                        // totalCommercialMail
-            stream.Write(0);                        // unreadMail
-            stream.Write(0);                        // unreadMiaMail
-            stream.Write(0);                        // unreadCommercialMail
+            stream.Write(_character.Mails.UnreadMailCount.TotalSent);                // totalSentMail
+            stream.Write(_character.Mails.UnreadMailCount.TotalReceived);            // totalMail
+            stream.Write(_character.Mails.UnreadMailCount.TotalMiaReceived);         // totalMiaMail
+            stream.Write(_character.Mails.UnreadMailCount.TotalCommercialReceived);  // totalCommercialMail
+            stream.Write(_character.Mails.UnreadMailCount.UnreadReceived);           // unreadMail
+            stream.Write(_character.Mails.UnreadMailCount.UnreadMiaReceived);        // unreadMiaMail
+            stream.Write(_character.Mails.UnreadMailCount.UnreadCommercialReceived); // unreadCommercialMail
             stream.Write(_character.NumInventorySlots); // numInvenSlots
             stream.Write(_character.NumBankSlots);  // numBankSlots
             stream.Write(_character.Money); // moneyAmount - Inventory

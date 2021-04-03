@@ -1,4 +1,5 @@
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
+
 using AAEmu.Commons.Network;
 using AAEmu.Commons.Utils;
 using AAEmu.Login.Core.Controllers;
@@ -8,7 +9,7 @@ namespace AAEmu.Login.Core.Packets.C2L
 {
     public class CARequestAuthTrionPacket : LoginPacket
     {
-        public CARequestAuthTrionPacket() : base(0x05)
+        public CARequestAuthTrionPacket() : base(0x04)
         {
         }
 
@@ -22,27 +23,24 @@ namespace AAEmu.Login.Core.Packets.C2L
             var signature = stream.ReadString();
             var isLast = stream.ReadBoolean();
 
-            //var xmlDoc = XDocument.Parse(ticket);
+            var xmlDoc = XDocument.Parse(ticket);
 
-            //if (xmlDoc.Root == null)
-            //{
-            //    _log.Error("RequestAuthTrion: Catch parse ticket");
-            //    return;
-            //}
+            if (xmlDoc.Root == null)
+            {
+                _log.Error("RequestAuthTrion: Catch parse ticket");
+                return;
+            }
 
-            //var username = xmlDoc.Root.Element("username")?.Value;
-            //var password = xmlDoc.Root.Element("password")?.Value;
+            var username = xmlDoc.Root.Element("username")?.Value;
+            var password = xmlDoc.Root.Element("password")?.Value;
 
-            //if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            //{
-            //    _log.Error("RequestAuthTrion: username or password is empty or white space");
-            //    return;
-            //}
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                _log.Error("RequestAuthTrion: username or password is empty or white space");
+                return;
+            }
 
-            var username = "test";
-            //var password = "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=";
-            //var token = Helpers.StringToByteArray(password);
-            byte[] token = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+            var token = Helpers.StringToByteArray(password);
             LoginController.Login(Connection, username, token);
         }
     }

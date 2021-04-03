@@ -15,7 +15,7 @@ namespace AAEmu.Game.Core.Packets.G2C
 
         public override PacketStream Write(PacketStream stream)
         {
-            stream.Write(_skill.Id);
+            stream.Write(_skill.TemplateId);
             stream.Write(_skill.Level);
             return stream;
         }

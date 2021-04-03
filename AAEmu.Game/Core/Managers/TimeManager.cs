@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using AAEmu.Commons.Utils;
@@ -22,7 +22,6 @@ namespace AAEmu.Game.Core.Managers
         public TimeManager()
         {
             _observers = new List<IObserver<float>>();
-            ;
         }
 
         public IDisposable Subscribe(IObserver<float> observer)
@@ -42,7 +41,8 @@ namespace AAEmu.Game.Core.Managers
 
         public void Start()
         {
-            _time = 12 * 60 * 60;
+            var date = DateTime.Now;
+            _time = date.Hour * 60 * 60 + date.Minute * 60;
             _work = true;
             new Thread(Tick) {Name = "TimeManagerThread"}.Start();
         }

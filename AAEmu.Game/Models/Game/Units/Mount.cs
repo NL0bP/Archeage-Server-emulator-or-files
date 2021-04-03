@@ -1,28 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
+
 using AAEmu.Game.Core.Managers;
 using AAEmu.Game.Core.Managers.World;
 using AAEmu.Game.Core.Network.Game;
 using AAEmu.Game.Core.Packets.G2C;
 using AAEmu.Game.Models.Game.Char;
+using AAEmu.Game.Models.Game.DoodadObj.Static;
 using AAEmu.Game.Models.Game.Formulas;
 using AAEmu.Game.Models.Game.Items;
 using AAEmu.Game.Models.Game.Mate;
 using AAEmu.Game.Models.Game.NPChar;
+using AAEmu.Game.Models.Game.World;
 
 namespace AAEmu.Game.Models.Game.Units
 {
     public sealed class Mount : Unit
     {
-        public ushort TlId { get; set; }
         public uint TemplateId { get; set; }
         public NpcTemplate Template { get; set; }
 
         public uint OwnerObjId { get; set; }
-        public uint Att1 { get; set; }
-        public byte Reason1 { get; set; }
-        public uint Att2 { get; set; }
-        public byte Reason2 { get; set; }
+        public uint Attached1 { get; set; }
+        public AttachUnitReason Reason1 { get; set; }
+        public uint Attached2 { get; set; }
+        public AttachUnitReason Reason2 { get; set; }
 
         public override float Scale => Template.Scale;
 
@@ -41,7 +43,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.Str);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.Str);
                 var parameters = new Dictionary<string, double> { ["level"] = Level };
                 var result = formula.Evaluate(parameters);
                 var res = (int)result;
@@ -64,7 +66,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.Dex);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.Dex);
                 var parameters = new Dictionary<string, double> { ["level"] = Level };
                 var res = (int)formula.Evaluate(parameters);
                 //foreach (var item in Inventory.Equip)
@@ -86,7 +88,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.Sta);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.Sta);
                 var parameters = new Dictionary<string, double> { ["level"] = Level };
                 var res = (int)formula.Evaluate(parameters);
                 //foreach (var item in Inventory.Equip)
@@ -108,7 +110,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.Int);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.Int);
                 var parameters = new Dictionary<string, double> { ["level"] = Level };
                 var res = (int)formula.Evaluate(parameters);
                 //foreach (var item in Inventory.Equip)
@@ -130,7 +132,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.Spi);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.Spi);
                 var parameters = new Dictionary<string, double> { ["level"] = Level };
                 var res = (int)formula.Evaluate(parameters);
                 //foreach (var item in Inventory.Equip)
@@ -152,7 +154,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.Fai);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.Fai);
                 var parameters = new Dictionary<string, double> { ["level"] = Level };
                 var res = (int)formula.Evaluate(parameters);
                 foreach (var bonus in GetBonuses(UnitAttribute.Fai))
@@ -171,7 +173,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.MaxHealth);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.MaxHealth);
                 var parameters = new Dictionary<string, double>
                 {
                     ["level"] = Level,
@@ -199,7 +201,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.HealthRegen);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.HealthRegen);
                 var parameters = new Dictionary<string, double>
                 {
                     ["level"] = Level,
@@ -228,7 +230,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.PersistentHealthRegen);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.PersistentHealthRegen);
                 var parameters = new Dictionary<string, double>
                 {
                     ["level"] = Level,
@@ -257,7 +259,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.MaxMana);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.MaxMana);
                 var parameters = new Dictionary<string, double>
                 {
                     ["level"] = Level,
@@ -285,7 +287,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.ManaRegen);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.ManaRegen);
                 var parameters = new Dictionary<string, double>
                 {
                     ["level"] = Level,
@@ -314,7 +316,7 @@ namespace AAEmu.Game.Models.Game.Units
         {
             get
             {
-                var formula = FormulaManager.Instance.GetUnitFormula(FormulaOwnerType.Mate, UnitFormulaKind.PersistentManaRegen);
+                var formula = FormulaManager.Instance.GetUnitFormula(UnitOwnerType.Mate, UnitFormulaKind.PersistentManaRegen);
                 var parameters = new Dictionary<string, double>
                 {
                     ["level"] = Level,
@@ -345,28 +347,31 @@ namespace AAEmu.Game.Models.Game.Units
         {
             ModelParams = new UnitCustomModelParams();
             Skills = new List<uint>();
-            Att1 = 0u;
-            Reason1 = 0;
-            Att2 = 0u;
-            Reason2 = 0;
+            Attached1 = 0u;
+            Reason1 = AttachUnitReason.None;
+            Attached2 = 0u;
+            Reason2 = AttachUnitReason.None;
+            UnitType = BaseUnitType.Mate;
+            WorldPos = new WorldPos();
+            Position = new Point();
         }
 
         public override void AddVisibleObject(Character character)
         {
             character.SendPacket(new SCUnitStatePacket(this));
             character.SendPacket(new SCMateStatePacket(ObjId));
-            character.SendPacket(new SCUnitPointsPacket(ObjId, Hp, Mp));
-            if (Att1 > 0)
+            character.SendPacket(new SCUnitPointsPacket(ObjId, Hp, Mp, HighAbilityRsc));
+            if (Attached1 > 0)
             {
-                var owner = WorldManager.Instance.GetCharacterByObjId(Att1);
+                var owner = WorldManager.Instance.GetCharacterByObjId(Attached1);
                 if (owner != null)
-                    character.SendPacket(new SCUnitAttachedPacket(owner.ObjId, 1, Reason1, ObjId));
+                    character.SendPacket(new SCUnitAttachedPacket(owner.ObjId, AttachPoint.Driver, Reason1, ObjId));
             }
-            if (Att2 > 0)
+            if (Attached2 > 0)
             {
-                var passenger = WorldManager.Instance.GetCharacterByObjId(Att1);
+                var passenger = WorldManager.Instance.GetCharacterByObjId(Attached1);
                 if (passenger != null)
-                    character.SendPacket(new SCUnitAttachedPacket(passenger.ObjId, 2, Reason2, ObjId));
+                    character.SendPacket(new SCUnitAttachedPacket(passenger.ObjId, AttachPoint.Passenger0, Reason2, ObjId));
             }
         }
 

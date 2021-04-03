@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+
 using AAEmu.Commons.IO;
 using AAEmu.Commons.Utils;
 using AAEmu.Game.Core.Managers.Id;
@@ -12,6 +13,9 @@ using AAEmu.Game.Models.Game.Housing;
 using AAEmu.Game.Models.Game.World;
 using AAEmu.Game.Utils;
 using AAEmu.Game.Utils.DB;
+
+using MySql.Data.MySqlClient;
+
 using NLog;
 
 namespace AAEmu.Game.Core.Managers
@@ -58,27 +62,27 @@ namespace AAEmu.Game.Core.Managers
             _housesTl = new Dictionary<ushort, House>();
             _removedHousings = new List<uint>();
 
-//            var housingAreas = new Dictionary<uint, HousingAreas>();
+            //            var housingAreas = new Dictionary<uint, HousingAreas>();
             var houseTaxes = new Dictionary<uint, HouseTax>();
 
             using (var connection = SQLite.CreateConnection())
             {
-//                using (var command = connection.CreateCommand())
-//                {
-//                    command.CommandText = "SELECT * FROM housing_areas";
-//                    command.Prepare();
-//                    using (var reader = new SQLiteWrapperReader(command.ExecuteReader()))
-//                    {
-//                        while (reader.Read())
-//                        {
-//                            var template = new HousingAreas();
-//                            template.Id = reader.GetUInt32("id");
-//                            template.Name = reader.GetString("name");
-//                            template.GroupId = reader.GetUInt32("housing_group_id");
-//                            housingAreas.Add(template.Id, template);
-//                        }
-//                    }
-//                }
+                //                using (var command = connection.CreateCommand())
+                //                {
+                //                    command.CommandText = "SELECT * FROM housing_areas";
+                //                    command.Prepare();
+                //                    using (var reader = new SQLiteWrapperReader(command.ExecuteReader()))
+                //                    {
+                //                        while (reader.Read())
+                //                        {
+                //                            var template = new HousingAreas();
+                //                            template.Id = reader.GetUInt32("id");
+                //                            template.Name = reader.GetString("name");
+                //                            template.GroupId = reader.GetUInt32("housing_group_id");
+                //                            housingAreas.Add(template.Id, template);
+                //                        }
+                //                    }
+                //                }
 
                 using (var command = connection.CreateCommand())
                 {
@@ -129,7 +133,7 @@ namespace AAEmu.Game.Core.Managers
                             template.GateExists = reader.GetBoolean("gate_exists", true);
                             template.Hp = reader.GetInt32("hp");
                             template.RepairCost = reader.GetUInt32("repair_cost");
-                            template.GardenRadius = reader.GetFloat("garden_radius"); // нет такого поля в 3.5.5.3
+                            template.GardenRadius = reader.GetFloat("garden_radius");
                             template.Family = reader.GetString("family");
                             var taxationId = reader.GetUInt32("taxation_id");
                             template.Taxation = houseTaxes.ContainsKey(taxationId) ? houseTaxes[taxationId] : null;
@@ -152,11 +156,10 @@ namespace AAEmu.Game.Core.Managers
                             var templateBindings = binding.Find(x => x.TemplateId.Contains(template.Id));
                             using (var command2 = connection.CreateCommand())
                             {
-                                //command2.CommandText = "SELECT * FROM housing_binding_doodads WHERE housing_id=@housing_id"; // для 3.5.5.3
-                                command2.CommandText = "SELECT * FROM housing_binding_doodads WHERE owner_id=@owner_id AND owner_type='Housing'"; // для 1.2
+                                command2.CommandText =
+                                    "SELECT * FROM housing_binding_doodads WHERE owner_id=@owner_id AND owner_type='Housing'";
                                 command2.Prepare();
-                                //command2.Parameters.AddWithValue("housing_id", template.Id); // для 3.5.5.3
-                                command2.Parameters.AddWithValue("owner_id", template.Id); // для 1.2
+                                command2.Parameters.AddWithValue("owner_id", template.Id);
                                 using (var reader2 = new SQLiteWrapperReader(command2.ExecuteReader()))
                                 {
                                     var doodads = new List<HousingBindingDoodad>();
@@ -165,17 +168,19 @@ namespace AAEmu.Game.Core.Managers
                                         var bindingDoodad = new HousingBindingDoodad();
                                         bindingDoodad.AttachPointId = reader2.GetUInt32("attach_point_id");
                                         bindingDoodad.DoodadId = reader2.GetUInt32("doodad_id");
-                                        if (templateBindings != null && templateBindings.AttachPointId.ContainsKey(bindingDoodad.AttachPointId))
-                                        {
-                                            bindingDoodad.Position = templateBindings.AttachPointId[bindingDoodad.AttachPointId].Clone();
-                                        }
+
+                                        if (templateBindings != null &&
+                                            templateBindings.AttachPointId.ContainsKey(bindingDoodad.AttachPointId))
+                                            bindingDoodad.Position = templateBindings
+                                                .AttachPointId[bindingDoodad.AttachPointId].Clone();
+
                                         if (bindingDoodad.Position == null)
-                                        {
                                             bindingDoodad.Position = new Point(0, 0, 0);
-                                        }
                                         bindingDoodad.Position.WorldId = 1;
+
                                         doodads.Add(bindingDoodad);
                                     }
+
                                     template.HousingBindingDoodad = doodads.ToArray();
                                 }
                             }
@@ -225,12 +230,11 @@ namespace AAEmu.Game.Core.Managers
                             var templateId = reader.GetUInt32("template_id");
                             var house = Create(templateId);
                             house.Id = reader.GetUInt32("id");
-                            house.AccountId = reader.GetUInt64("account_id");
+                            house.AccountId = reader.GetUInt32("account_id");
                             house.OwnerId = reader.GetUInt32("owner");
                             house.CoOwnerId = reader.GetUInt32("co_owner");
                             house.Name = reader.GetString("name");
-                            house.Position =
-                                new Point(reader.GetFloat("x"), reader.GetFloat("y"), reader.GetFloat("z"));
+                            house.Position = new Point(reader.GetFloat("x"), reader.GetFloat("y"), reader.GetFloat("z"));
                             house.Position.RotationZ = reader.GetSByte("rotation_z");
                             house.Position.WorldId = 1;
                             house.CurrentStep = reader.GetInt32("current_step");
@@ -238,6 +242,7 @@ namespace AAEmu.Game.Core.Managers
                             house.Permission = (HousingPermission)reader.GetByte("permission");
                             _houses.Add(house.Id, house);
                             _housesTl.Add(house.TlId, house);
+                            house.IsDirty = false;
                         }
                     }
                 }
@@ -246,49 +251,32 @@ namespace AAEmu.Game.Core.Managers
             _log.Info("Loaded Housing {0}", _houses.Count);
         }
 
-        public void Save()
+        public (int, int) Save(MySqlConnection connection, MySqlTransaction transaction)
         {
-            using (var connection = MySQL.CreateConnection())
+            var deleteCount = 0;
+            lock (_removedHousings)
             {
-                using (var transaction = connection.BeginTransaction())
+                if (_removedHousings.Count > 0)
                 {
-                    lock (_removedHousings)
+                    using (var command = connection.CreateCommand())
                     {
-                        if (_removedHousings.Count > 0)
-                        {
-                            using (var command = connection.CreateCommand())
-                            {
-                                command.CommandText =
-                                    $"DELETE FROM housings WHERE id IN({string.Join(",", _removedHousings)})";
-                                command.Prepare();
-                                command.ExecuteNonQuery();
-                            }
-
-                            _removedHousings.Clear();
-                        }
+                        command.CommandText =
+                            $"DELETE FROM housings WHERE id IN({string.Join(",", _removedHousings)})";
+                        command.Prepare();
+                        command.ExecuteNonQuery();
+                        deleteCount++;
                     }
 
-                    foreach (var house in _houses.Values)
-                        house.Save(connection, transaction);
-
-                    try
-                    {
-                        transaction.Commit();
-                    }
-                    catch (Exception e)
-                    {
-                        _log.Error(e);
-                        try
-                        {
-                            transaction.Rollback();
-                        }
-                        catch (Exception eRollback)
-                        {
-                            _log.Error(eRollback);
-                        }
-                    }
+                    _removedHousings.Clear();
                 }
             }
+
+            var updateCount = 0;
+            foreach (var house in _houses.Values)
+                if (house.Save(connection, transaction))
+                    updateCount++;
+
+            return (updateCount, deleteCount);
         }
 
         public void SpawnAll()
@@ -369,6 +357,7 @@ namespace AAEmu.Game.Core.Managers
             house.CoOwnerId = connection.ActiveChar.Id;
             house.AccountId = connection.AccountId;
             house.Permission = HousingPermission.Public;
+            house.PlaceDate = DateTime.Now;
             _houses.Add(house.Id, house);
             _housesTl.Add(house.TlId, house);
 
@@ -413,6 +402,7 @@ namespace AAEmu.Game.Core.Managers
                 return;
 
             house.Name = name.Substring(0, 1).ToUpper() + name.Substring(1);
+            house.IsDirty = true; // Manually set the IsDirty on House level
             connection.SendPacket(new SCUnitNameChangedPacket(house.ObjId, house.Name));
         }
 

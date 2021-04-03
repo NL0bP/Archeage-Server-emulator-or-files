@@ -45,7 +45,7 @@ namespace AAEmu.Game.Core.Packets.G2C
             // 2901 DD05 3C  00  0000   0000 00 389416E0 E204 91E6305B00000000 4CFFFFFF 0401 0401 00040000 BBC0E9659E21640C4D689287322A627C63B8FD9EEDAF0C3999D14079393F023B1D6B032D574F2F787C814D90D137DAFD93E5577EDE35E1696A40B0DC031FB1D333E038A15163D278615FEFB9275D9FBD5B99E77F6890D8DA04F226267FCDC487E1A1DCAEB23A13399699B3617BF59C9DF85A81519C5093D61C5F44B8045FEEE90 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010001 FC73AE55 22ED
             //c пустым ключом pubkey не работает
             stream.Write(_reason);               // Reason 0
-            stream.Write(_gm);                   // GM 0 поле есть в 3.0.3.0, но нет в 3.5.5.3
+            stream.Write(_gm);                   // GM 0
             stream.Write(_token);                // SC 0
             stream.Write(_port);                 // SP 1250
             stream.Write(Helpers.UnixTimeNow()); // WF 0
@@ -64,14 +64,8 @@ namespace AAEmu.Game.Core.Packets.G2C
             GameConnection.CryptRsa.Exponent = publicKey.Exponent;
             stream.Write(GameConnection.CryptRsa.Exponent);
             //----- RSA -----
-            // IP Adress and Port of client??
-            //stream.Write((byte)10); // nat Addr
-            //stream.Write((byte)1);
-            //stream.Write((byte)1);
-            //stream.Write((byte)113);
-            stream.Write((uint)0x025c16ee); //port
-            stream.Write((ushort)25375); //port
-            //stream.Write(_authority);                   // authority 1 это поле есть в 3.5.5.3, но нет в 3.0.3.0
+            stream.Write((uint)0x0100007F); //NAT address
+            stream.Write((ushort)25375); //NAT port
 
             return stream;
         }

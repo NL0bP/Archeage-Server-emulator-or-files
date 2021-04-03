@@ -71,8 +71,8 @@ namespace AAEmu.Game.Core.Network.Game
             // SC here you can set the filter to hide packets
             if (!(TypeId == 0x013 && Level == 2) && // Pong
                 !(TypeId == 0x016 && Level == 2) && // FastPong
-                !(TypeId == 0x06B && Level == 1) && // SCUnitMovements
-                !(TypeId == 0x06C && Level == 1))   // SCOneUnitMovement
+                !(TypeId == 0x162 && Level == 5) && // SCUnitMovements
+                !(TypeId == 0x09a && Level == 5))   // SCOneUnitMovement
                 _log.Debug("GamePacket: S->C type {0:X3} {1}", TypeId, this.ToString().Substring(23));
 
             return ps;
@@ -83,28 +83,12 @@ namespace AAEmu.Game.Core.Network.Game
             // CS here you can set the filter to hide packets
             if (!(TypeId == 0x012 && Level == 2) && // Ping
                 !(TypeId == 0x015 && Level == 2) && // FastPing
-                !(TypeId == 0x089 && Level == 1))   // CSMoveUnit
+                !(TypeId == 0x084 && Level == 5))   // CSMoveUnit
                 _log.Debug("GamePacket: C->S type {0:X3} {1}", TypeId, this.ToString().Substring(23));
 
             try
             {
                 Read(ps);
-                //if (Level == 5)
-                //{
-                //    //пакет от клиента, дешифруем
-                //    //------------------------------
-                //    var input = new byte[ps.Count - 2];
-                //    Buffer.BlockCopy(ps, 2, input, 0, ps.Count - 2);
-                //    var output = DecryptCs.Decode(input, GameConnection.CryptRsa.XorKey, GameConnection.CryptRsa.AesKey, GameConnection.CryptRsa.Iv, m_numPck);
-                //    m_numPck++; //увеличим номер пакета от клиента
-                //    var OutBytes = new byte[output.Length + 5];
-                //    Buffer.BlockCopy(ps, 0, OutBytes, 0, 5);
-                //    Buffer.BlockCopy(output, 1, OutBytes, 5, output.Length - 1);
-                //    //return OutBytes;
-                //    ps = new PacketStream();
-                //    ps.Write(OutBytes);
-                //    //------------------------------
-                //}
             }
             catch (Exception ex)
             {

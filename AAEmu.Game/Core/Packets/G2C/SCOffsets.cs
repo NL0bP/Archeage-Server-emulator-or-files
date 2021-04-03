@@ -267,8 +267,8 @@ namespace AAEmu.Game.Core.Packets.G2C
         public const ushort SCDiceValuePacket = 0x1d;
         public const ushort SCHungPacket = 0x19b;
         public const ushort SCUnhungPacket = 0x0fe;
-        public const ushort SCAttachToDoodadPacket = 0x205;
-        public const ushort SCDetachFromDoodadPacket = 0x6a;
+        //public const ushort SCAttachToDoodadPacket = 0x205;  // SCBondDoodadPacket in 1.2
+        //public const ushort SCDetachFromDoodadPacket = 0x6a; // SCUnbondDoodadPacket in 1.2
         public const ushort SCPlaySequencePacket = 0x217;
         public const ushort SCGimmicksRemovedPacket = 0x4a;
         public const ushort SCGimmickJointsBrokenPacket = 0x168;
@@ -567,7 +567,7 @@ namespace AAEmu.Game.Core.Packets.G2C
         public const ushort SCRebuildHouseTaxInfoPacket = 0x128;
         public const ushort SCInGameShopConfigPacket = 0x30;
         public const ushort SCGameRuleConfigPacket = 0x1af;
-        public const ushort SCUnknownPacket_0x2CF = 0x2cf;
+        public const ushort SCProtectFactionPacket = 0x2cf;
         public const ushort SCUnknownPacket_0x29C = 0x29c;
         public const ushort SCUnknownPacket_0x0E7 = 0x0e7;
         public const ushort SCTenprotectStubCall1Packet = 0x278;
@@ -641,7 +641,7 @@ namespace AAEmu.Game.Core.Packets.G2C
         public const ushort SCPlotEventPacket = 0x2cb;
         //public const ushort SCUnknownPacket_0x1A1 = 0x1a1;
         public const ushort SCActabilityPacket = 0x1a1;
-        public const ushort SCUnknownPacket_0x1A5 = 0x1a5;
+        public const ushort SCGimmicksCreatedPacket = 0x1a5;
         public const ushort SCUnknownPacket_0x0A2 = 0x0a2;
         public const ushort SCUnknownPacket_0x0A5 = 0x0e5;
         public const ushort SCUnknownPacket_0x0A3 = 0x0a3;
@@ -739,7 +739,7 @@ namespace AAEmu.Game.Core.Packets.G2C
         public const ushort SCFamilyDescPacket = 0x0ffff;
         public const ushort SCDeleteCharacterResponsePacket = 0x0ffff;
         public const ushort SCCancelCharacterDeleteResponsePacket = 0x0ffff;
-        public const ushort SCCharacterLaborPowerChangedPacket = 0x0ffff;
+        public const ushort SCCharacterLaborPowerChangedPacket = 0x225;
         public const ushort SCCharBriefPacket = 0x0ffff;
         public const ushort SCPlaytimePacket = 0x0ffff;
         public const ushort SCCharacterPortalsPacket = 0x0ffff;
@@ -774,8 +774,8 @@ namespace AAEmu.Game.Core.Packets.G2C
         public const ushort SCAuctionCanceledPacket = 0x0ffff;
         public const ushort SCAuctionMessagePacket = 0x0ffff;
         public const ushort SCNpcSpawnerPacket = 0x0ffff;
-        public const ushort SCBondDoodadPacket = 0x0ffff;
-        public const ushort SCUnbondDoodadPacket = 0x0ffff;
+        public const ushort SCBondDoodadPacket = 0x205; // SCAttachToDoodadPacket
+        public const ushort SCUnbondDoodadPacket = 0x06a; //SCDetachFromDoodadPacket
         public const ushort SCWorldRayCastingResultPacket = 0x0ffff;
         public const ushort SCWorldAimPointPacket = 0x0ffff;
         public const ushort SCWorldAABBPacket = 0x0ffff;

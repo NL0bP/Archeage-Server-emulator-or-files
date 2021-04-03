@@ -7,7 +7,6 @@ namespace AAEmu.Game.Core.Packets.G2C
 {
     public class SCUnknownPacket_0x14F : GamePacket
     {
-        private readonly uint _acount;
         private readonly byte _AccountAttributeKind;
         private readonly uint _extraKind;
         private readonly byte _worldId;
@@ -17,10 +16,9 @@ namespace AAEmu.Game.Core.Packets.G2C
 
         public SCUnknownPacket_0x14F() : base(SCOffsets.SCUnknownPacket_0x14F, 5)
         {
-            _acount = 1;
             _AccountAttributeKind = (byte) 1;
             _extraKind = 0;
-            _worldId = 0xff;
+            _worldId = 0x1;
             _count = 0;
             _startDate = DateTime.Now;
             _endData = DateTime.MinValue;
@@ -28,8 +26,8 @@ namespace AAEmu.Game.Core.Packets.G2C
 
         public override PacketStream Write(PacketStream stream)
         {
-            stream.Write(_acount);
-            for (var i = 0; i < _acount; i++)
+            stream.Write(_count);
+            for (var i = 0; i < _count; i++)
             {
                 stream.Write(_AccountAttributeKind); // chatTypeGroup
                 stream.Write(_extraKind);

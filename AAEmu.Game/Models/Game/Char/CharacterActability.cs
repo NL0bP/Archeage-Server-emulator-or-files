@@ -1,8 +1,10 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+
 using AAEmu.Game.Core.Managers.UnitManagers;
 using AAEmu.Game.Core.Packets.G2C;
 using AAEmu.Game.Models.Game.Items.Actions;
+
 using MySql.Data.MySqlClient;
 
 namespace AAEmu.Game.Models.Game.Char
@@ -23,7 +25,7 @@ namespace AAEmu.Game.Models.Game.Char
         {
             if (!Actabilities.ContainsKey(id))
                 return;
-            
+
             var actability = Actabilities[id];
             actability.Point += point;
 
@@ -69,10 +71,16 @@ namespace AAEmu.Game.Models.Game.Char
                 return; // TODO ... send msg error?
 
             if (expand.LifePoint > Owner.VocationPoint)
+            {
+                Owner.SendErrorMessage(ErrorMessageType.NotEnoughExpandItemAndMoney);
                 return; // TODO ... send msg error?
+            }
 
-            if (expand.ItemId != 0 && expand.ItemCount != 0 && !Owner.Inventory.CheckItems(expand.ItemId, expand.ItemCount))
+            if (expand.ItemId != 0 && expand.ItemCount != 0 && !Owner.Inventory.CheckItems(Items.SlotType.Inventory, expand.ItemId, expand.ItemCount))
+            {
+                Owner.SendErrorMessage(ErrorMessageType.NotEnoughExpandItem);
                 return; // TODO ... send msg error?
+            }
 
             if (expand.LifePoint > 0)
             {
@@ -82,6 +90,8 @@ namespace AAEmu.Game.Models.Game.Char
 
             if (expand.ItemId != 0 && expand.ItemCount != 0)
             {
+                Owner.Inventory.Bag.ConsumeItem(ItemTaskType.ExpandExpert, expand.ItemId, expand.ItemCount, null);
+                /*
                 var items = Owner.Inventory.RemoveItem(expand.ItemId, expand.ItemCount);
 
                 var tasks = new List<ItemTask>();
@@ -94,6 +104,7 @@ namespace AAEmu.Game.Models.Game.Char
                 }
 
                 Owner.SendPacket(new SCItemTaskSuccessPacket(ItemTaskType.ExpandExpert, tasks, new List<ulong>()));
+                */
             }
 
             Owner.ExpandedExpert = expand.ExpandCount;

@@ -31,6 +31,9 @@ namespace AAEmu.Game.Core.Packets.G2C
                 stream.Write(remove);
 
             stream.Write(0u); // type(id)
+            stream.Write(0u); // lockItemSlotKey
+            stream.Write(0u); // flags
+
             return stream;
         }
     }

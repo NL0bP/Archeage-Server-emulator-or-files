@@ -49,5 +49,9 @@ namespace AAEmu.Commons.Cryptography
             var head = System.BitConverter.ToUInt32(keyXoRraw, 0);
             XorKey = (head ^ 0x15a0248e) * head ^ 0x070f1f23 & 0xffffffff; // 3.0.3.0 archerage.to
         }
+        public void GetNevIv()
+        {
+            Iv = new byte[16];
+        }
     }
 }

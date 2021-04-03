@@ -1,9 +1,16 @@
+﻿using System;
 using AAEmu.Commons.Utils;
 using AAEmu.Game.Core.Managers;
+using AAEmu.Game.Core.Managers.UnitManagers;
+using AAEmu.Game.Core.Managers.World;
 using AAEmu.Game.Models.Game.Char;
 using AAEmu.Game.Models.Game.DoodadObj.Templates;
 using AAEmu.Game.Models.Game.Items;
+using AAEmu.Game.Models.Game.Items.Actions;
+using AAEmu.Game.Models.Game.Skills;
+using AAEmu.Game.Models.Game.Skills.Effects;
 using AAEmu.Game.Models.Game.Units;
+using AAEmu.Game.Models.Game.World;
 using AAEmu.Game.Utils;
 
 namespace AAEmu.Game.Models.Game.DoodadObj.Funcs
@@ -17,21 +24,22 @@ namespace AAEmu.Game.Models.Game.DoodadObj.Funcs
         public int Percent { get; set; }
         public int RemainTime { get; set; }
         public uint GroupId { get; set; }
-        
+
         public override void Use(Unit caster, Doodad owner, uint skillId)
         {
-            Character character = (Character) caster;
+            Character character = (Character)caster;
             if (character == null) return;
-            
+
             int chance = Rand.Next(0, 10000);
             if (chance > Percent) return;
 
             int count = Rand.Next(CountMin, CountMax);
-            
-            Item item = ItemManager.Instance.Create(ItemId, count, 0);
-            InventoryHelper.AddItemAndUpdateClient(character, item);
-            
-            _log.Debug("DoodadFuncLootItem");
+            if (character.Inventory.Bag.AcquireDefaultItem(ItemTaskType.AutoLootDoodadItem, ItemId, count))
+                DoodadManager.Instance.TriggerPhases(GetType().Name, caster, owner, skillId);
+            else
+            {
+                character.SendErrorMessage(ErrorMessageType.BagFull);
+            }
         }
     }
 }

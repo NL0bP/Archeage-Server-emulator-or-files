@@ -1,4 +1,4 @@
-using AAEmu.Commons.Network;
+﻿using AAEmu.Commons.Network;
 using AAEmu.Game.Core.Network.Game;
 using AAEmu.Game.Models.Game.Mails;
 
@@ -7,9 +7,9 @@ namespace AAEmu.Game.Core.Packets.G2C
     public class SCMailListPacket : GamePacket
     {
         private readonly bool _isSent;
-        private readonly Mail[] _mails;
+        private readonly MailHeader[] _mails;
 
-        public SCMailListPacket(bool isSent, Mail[] mails) : base(SCOffsets.SCMailListPacket, 5)
+        public SCMailListPacket(bool isSent, MailHeader[] mails) : base(SCOffsets.SCMailListPacket, 5)
         {
             _isSent = isSent;
             _mails = mails;

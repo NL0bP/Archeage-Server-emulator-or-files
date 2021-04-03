@@ -1,20 +1,23 @@
 {
-  "SecretKey": "test",
-  "InternalNetwork": {
-    "Host": "127.0.0.1",
-    "Port": 1234
-  },
-  "Network": {
-    "Host": "*",
-    "Port": 1237
-  },
-  "Connections": {
-    "MySQLProvider": {
-      "Host": "localhost",
-      "Port": "3306",
-      "User": "root",
-      "Password": "",
-      "Database": "aaemu_login"
+    "SecretKey": "test",
+    "AutoAccount" : true,
+    "InternalNetwork": {
+        "Host": "127.0.0.1",
+        "Port": 1234
+    },
+    "Network": {
+        "Host": "*",
+        "Port": 1237,
+        "NumConnections": 10
+
+    },
+    "Connections": {
+        "MySQLProvider": {
+            "Host": "localhost",
+            "Port": "3306",
+            "User": "root",
+            "Password": "root",
+            "Database": "aaemu_login"
+        }
     }
-  }
 }

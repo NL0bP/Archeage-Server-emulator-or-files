@@ -1,19 +1,11 @@
-using System;
+﻿using System;
+
 using AAEmu.Commons.Network;
 using AAEmu.Commons.Utils;
+using AAEmu.Game.Models.Game.Skills.Static;
 
 namespace AAEmu.Game.Models.Game.Skills
 {
-    public enum SkillCastTargetType : byte
-    {
-        Unit = 0,
-        Position = 1,
-        Position2 = 2,
-        Unk3 = 3,
-        Doodad = 4,
-        Position3 = 5
-    }
-
     public abstract class SkillCastTarget : PacketMarshaler
     {
         public SkillCastTargetType Type { get; set; }
@@ -39,13 +31,13 @@ namespace AAEmu.Game.Models.Game.Skills
                 case SkillCastTargetType.Position2:
                     obj = new SkillCastPosition2Target();
                     break;
-                case SkillCastTargetType.Unk3:
-                    obj = new SkillCastUnk3Target();
+                case SkillCastTargetType.Item:
+                    obj = new SkillCastItemTarget();
                     break;
                 case SkillCastTargetType.Doodad:
                     obj = new SkillCastDoodadTarget();
                     break;
-                case SkillCastTargetType.Position3:
+                case SkillCastTargetType.Position5:
                     obj = new SkillCastPosition3Target();
                     break;
                 default:
@@ -161,7 +153,7 @@ namespace AAEmu.Game.Models.Game.Skills
         }
     }
 
-    public class SkillCastUnk3Target : SkillCastTarget
+    public class SkillCastItemTarget : SkillCastTarget
     {
         public ulong Id { get; set; }
         public uint Type1 { get; set; }

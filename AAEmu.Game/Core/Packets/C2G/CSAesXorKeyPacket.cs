@@ -1,0 +1,58 @@
+﻿using System;
+using System.Linq;
+using AAEmu.Commons.Network;
+using AAEmu.Game.Core.Network.Connections;
+using AAEmu.Game.Core.Network.Game;
+using AAEmu.Commons.Utils;
+using AAEmu.Game.Core.Packets.G2C;
+using AAEmu.Game.Models.Game.Char;
+using NLog;
+
+namespace AAEmu.Game.Core.Packets.C2G
+{
+    public class CSAesXorKeyPacket : GamePacket
+    {
+        public CSAesXorKeyPacket() : base(CSOffsets.CSAesXorKeyPacket, 1)
+        {
+        }
+
+        public override void Read(PacketStream stream)
+        {
+            var len = stream.ReadInt32();    // lenAES?
+            var len2 = stream.ReadInt16(); // lenXOR?
+
+            if (len != 0 && len2 != 0)
+            {
+                var encAes = stream.ReadBytes(len / 2);
+                var encXor = stream.ReadBytes(len2 / 2);
+                GameConnection.CryptRsa.GetAesKey(encAes);
+                GameConnection.CryptRsa.GetXorKey(encXor);
+                GameConnection.CryptRsa.GetNevIv();
+            }
+
+            _log.Info("AES: {0} XOR: {1}", Helpers.ByteArrayToString(GameConnection.CryptRsa.AesKey), GameConnection.CryptRsa.XorKey);
+
+            Connection.SendPacket(new SCGetSlotCountPacket(0));
+            Connection.SendPacket(new SCAccountInfoPacket((int)Connection.Payment.Method, Connection.Payment.Location, Connection.Payment.StartTime, Connection.Payment.EndTime));
+            Connection.SendPacket(new SCAccountAttendancePacket(31));
+
+            Connection.SendPacket(new SCRaceCongestionPacket());
+            Connection.LoadAccount();
+            var characters = Connection.Characters.Values.ToArray();
+
+            if (characters.Length == 0)
+                Connection.SendPacket(new SCCharacterListPacket(true, characters));
+            else
+                for (var i = 0; i < characters.Length; i += 2)
+                {
+                    var last = characters.Length - i <= 2;
+                    var temp = new Character[last ? characters.Length - i : 2];
+                    Array.Copy(characters, i, temp, 0, temp.Length);
+                    Connection.SendPacket(new SCCharacterListPacket(last, temp));
+                }
+
+            Connection.SendPacket(new SCUnknownPacket_0x14F());
+
+        }
+    }
+}

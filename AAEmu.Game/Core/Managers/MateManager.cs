@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
+
 using AAEmu.Commons.Utils;
 using AAEmu.Game.Core.Managers.Id;
 using AAEmu.Game.Core.Managers.World;
@@ -7,11 +8,13 @@ using AAEmu.Game.Core.Network.Connections;
 using AAEmu.Game.Core.Packets.G2C;
 using AAEmu.Game.Models;
 using AAEmu.Game.Models.Game.Char;
+using AAEmu.Game.Models.Game.DoodadObj.Static;
 using AAEmu.Game.Models.Game.Items;
 using AAEmu.Game.Models.Game.Items.Actions;
 using AAEmu.Game.Models.Game.Mate;
 using AAEmu.Game.Models.Game.Units;
 using AAEmu.Game.Utils.DB;
+
 using NLog;
 
 namespace AAEmu.Game.Core.Managers
@@ -53,7 +56,7 @@ namespace AAEmu.Game.Core.Managers
         {
             foreach (var mate in _activeMates.Values)
             {
-                if (mate.Att1 == objId || mate.Att2 == objId) return mate;
+                if (mate.Attached1 == objId || mate.Attached2 == objId) return mate;
             }
 
             return null;
@@ -86,12 +89,12 @@ namespace AAEmu.Game.Core.Managers
             if (string.IsNullOrWhiteSpace(newName) || newName.Length == 0 || !_nameRegex.IsMatch(newName)) return null;
             var mateInfo = GetActiveMate(owner.ObjId);
             if (mateInfo == null || mateInfo.TlId != tlId) return null;
-            mateInfo.Name = newName;
+            mateInfo.Name = newName.FirstCharToUpper();
             owner.BroadcastPacket(new SCUnitNameChangedPacket(mateInfo.ObjId, newName), true);
             return mateInfo;
         }
 
-        public void MountMate(GameConnection connection, uint tlId, byte ap, byte reason)
+        public void MountMate(GameConnection connection, uint tlId, AttachPoint ap, AttachUnitReason reason)
         {
             var character = connection.ActiveChar;
             var mateInfo = GetActiveMateByTlId(tlId);
@@ -99,48 +102,48 @@ namespace AAEmu.Game.Core.Managers
 
             if (mateInfo.OwnerObjId != character.ObjId)
             {
-                if (mateInfo.Att2 > 0) return;
-                character.BroadcastPacket(new SCUnitAttachedPacket(character.ObjId, 2, reason, mateInfo.ObjId), true);
-                mateInfo.Att2 = character.ObjId;
+                if (mateInfo.Attached2 > 0) return;
+                character.BroadcastPacket(new SCUnitAttachedPacket(character.ObjId, ap, reason, mateInfo.ObjId), true);
+                mateInfo.Attached2 = character.ObjId;
                 mateInfo.Reason2 = reason;
             }
             else
             {
-                if (mateInfo.Att1 > 0) return;
-                character.BroadcastPacket(new SCUnitAttachedPacket(character.ObjId, 1, reason, mateInfo.ObjId), true);
-                mateInfo.Att1 = character.ObjId;
+                if (mateInfo.Attached1 > 0) return;
+                character.BroadcastPacket(new SCUnitAttachedPacket(character.ObjId, ap, reason, mateInfo.ObjId), true);
+                mateInfo.Attached1 = character.ObjId;
                 mateInfo.Reason1 = reason;
             }
 
-            _log.Debug("MountMate. mountTlId: {0}, att1: {1}, att2 {2}, reason: {3}", mateInfo.TlId, mateInfo.Att1, mateInfo.Att2, reason);
+            _log.Debug("MountMate. mountTlId: {0}, att1: {1}, att2 {2}, attachPoint{3}, reason: {4}", mateInfo.TlId, mateInfo.Attached1, mateInfo.Attached2, ap, reason);
         }
 
-        public void UnMountMate(Character character, uint tlId, byte ap, byte reason)
+        public void UnMountMate(Character character, uint tlId, AttachPoint ap, AttachUnitReason reason)
         {
             var mateInfo = GetActiveMateByTlId(tlId);
             if (mateInfo == null) return;
 
             var unMounted = 0;
             Character targetObj = null;
-            if (mateInfo.Att1 == character.ObjId && ap == 1)
+            if (mateInfo.Attached1 == character.ObjId && ap == AttachPoint.Driver)
             {
                 targetObj = character;
-                mateInfo.Att1 = 0;
+                mateInfo.Attached1 = 0;
                 mateInfo.Reason1 = 0;
                 unMounted = 1;
             }
-            else if (ap == 2)
+            else if (ap == AttachPoint.Passenger0)
             {
-                targetObj = WorldManager.Instance.GetCharacterByObjId(mateInfo.Att2);
+                targetObj = WorldManager.Instance.GetCharacterByObjId(mateInfo.Attached2);
                 mateInfo.Reason2 = 0;
-                mateInfo.Att2 = 0;
+                mateInfo.Attached2 = 0;
                 unMounted = 2;
             }
 
             if ((unMounted != 1 && unMounted != 2) || targetObj == null) return;
 
             character.BroadcastPacket(new SCUnitDetachedPacket(targetObj.ObjId, reason), true);
-            _log.Debug("UnMountMate. mountTlId: {0}, objId: {1}, att: {2}, reason: {3}", mateInfo.TlId, targetObj.ObjId, unMounted, reason);
+            _log.Debug("UnMountMate. mountTlId: {0}, objId: {1}, att: {2}, attachPoint{3}, reason: {4}", mateInfo.TlId, targetObj.ObjId, unMounted, ap, reason);
         }
 
         public void AddActiveMateAndSpawn(Character owner, Mount mount, Item item)
@@ -153,7 +156,7 @@ namespace AAEmu.Game.Core.Managers
 
             _activeMates.Add(owner.ObjId, mount);
 
-            owner.SendPacket(new SCItemTaskSuccessPacket(ItemTaskType.UpdateSummonMateItem, new List<ItemTask> {new ItemUpdate(item)},
+            owner.SendPacket(new SCItemTaskSuccessPacket(ItemTaskType.UpdateSummonMateItem, new List<ItemTask> { new ItemUpdate(item) },
                 new List<ulong>())); // TODO - maybe update details
             owner.SendPacket(new SCMateSpawnedPacket(mount));
             mount.Spawn();
@@ -167,8 +170,8 @@ namespace AAEmu.Game.Core.Managers
             var mateInfo = _activeMates[owner.ObjId];
             if (mateInfo.TlId != tlId) return;
 
-            if (mateInfo.Att1 > 0) UnMountMate((Character)WorldManager.Instance.GetUnit(mateInfo.Att1), tlId, 1, 1); // TODO reason unmount
-            if (mateInfo.Att2 > 0) UnMountMate((Character)WorldManager.Instance.GetUnit(mateInfo.Att2), tlId, 2, 1); // TODO reason unmount
+            if (mateInfo.Attached1 > 0) UnMountMate((Character)WorldManager.Instance.GetUnit(mateInfo.Attached1), tlId, AttachPoint.Driver, AttachUnitReason.MountMateLeft); // TODO reason unmount
+            if (mateInfo.Attached2 > 0) UnMountMate((Character)WorldManager.Instance.GetUnit(mateInfo.Attached2), tlId, AttachPoint.Passenger0, AttachUnitReason.MountMateLeft); // TODO reason unmount
             _activeMates[owner.ObjId].Delete();
             _activeMates.Remove(owner.ObjId);
             ObjectIdManager.Instance.ReleaseId(mateInfo.ObjId);
@@ -200,18 +203,18 @@ namespace AAEmu.Game.Core.Managers
             {
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT * FROM npc_mount_skills ORDER BY npc_id ASC";
+                    command.CommandText = "SELECT * FROM npc_mount_skills";
                     command.Prepare();
                     using (var reader = new SQLiteWrapperReader(command.ExecuteReader()))
                     {
-                        //uint step = 0;
                         while (reader.Read())
                         {
-                            var template = new NpcMountSkills();
-                            template.Id = reader.GetUInt32("id"); // нет такого поля в базе 3.5.5.3
-                            //template.Id = step++;
-                            template.NpcId = reader.GetUInt32("npc_id");
-                            template.MountSkillId = reader.GetUInt32("mount_skill_id");
+                            var template = new NpcMountSkills()
+                            {
+                                Id = reader.GetUInt32("id"),
+                                NpcId = reader.GetUInt32("npc_id"),
+                                MountSkillId = reader.GetUInt32("mount_skill_id")
+                            };
                             _slaveMountSkills.Add(template.Id, template);
                         }
                     }

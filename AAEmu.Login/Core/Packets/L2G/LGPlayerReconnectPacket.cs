@@ -1,4 +1,4 @@
-using AAEmu.Commons.Network;
+﻿using AAEmu.Commons.Network;
 using AAEmu.Login.Core.Network.Internal;
 
 namespace AAEmu.Login.Core.Packets.L2G
@@ -15,6 +15,7 @@ namespace AAEmu.Login.Core.Packets.L2G
         public override PacketStream Write(PacketStream stream)
         {
             stream.Write(_token);
+
             return stream;
         }
     }

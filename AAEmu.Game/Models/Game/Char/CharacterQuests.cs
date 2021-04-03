@@ -1,8 +1,10 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+
 using AAEmu.Game.Core.Managers;
+using AAEmu.Game.Core.Managers.Id;
 using AAEmu.Game.Core.Packets.G2C;
 using AAEmu.Game.Models.Game.Items;
 using AAEmu.Game.Models.Game.Items.Actions;
@@ -10,7 +12,9 @@ using AAEmu.Game.Models.Game.NPChar;
 using AAEmu.Game.Models.Game.Quests;
 using AAEmu.Game.Models.Game.World;
 using AAEmu.Game.Utils.DB;
+
 using MySql.Data.MySqlClient;
+
 using NLog;
 
 namespace AAEmu.Game.Models.Game.Char
@@ -45,7 +49,7 @@ namespace AAEmu.Game.Models.Game.Char
             if (template == null)
                 return;
             var quest = new Quest(template);
-            quest.Id = Quests.Count + 1; // TODO временно, переделать
+            quest.Id = QuestIdManager.Instance.GetNextId();
             quest.Status = QuestStatus.Progress;
             quest.Owner = Owner;
             Quests.Add(quest.TemplateId, quest);
@@ -71,23 +75,27 @@ namespace AAEmu.Game.Models.Game.Char
             {
                 if (supply)
                 {
+                    var exps = quest.GetCustomExp();
+                    var amount = quest.GetCustomCopper();
                     var supplies = QuestManager.Instance.GetSupplies(quest.Template.Level);
                     if (supplies != null)
                     {
-                        Owner.AddExp(supplies.Exp, true);
-                        Owner.Money += supplies.Copper;
+                        if (exps == 0)
+                            Owner.AddExp(supplies.Exp, true);
+                        if (amount == 0)
+                            amount = supplies.Copper;
+                        Owner.Money += amount;
                         Owner.SendPacket(
                             new SCItemTaskSuccessPacket(
                                 ItemTaskType.QuestComplete,
                                 new List<ItemTask>
                                 {
-                                    new MoneyChange(supplies.Copper)
+                                    new MoneyChange(amount)
                                 },
                                 new List<ulong>())
                         );
                     }
                 }
-
                 var completeId = (ushort)(quest.TemplateId / 64);
                 if (!CompletedQuests.ContainsKey(completeId))
                     CompletedQuests.Add(completeId, new CompletedQuest(completeId));
@@ -95,26 +103,26 @@ namespace AAEmu.Game.Models.Game.Char
                 complete.Body.Set((int)(quest.TemplateId - completeId * 64), true);
                 var body = new byte[8];
                 complete.Body.CopyTo(body, 0);
+                Drop(questId, false);
                 Owner.SendPacket(new SCQuestContextCompletedPacket(quest.TemplateId, body, res));
-                Quests.Remove(questId);
-                _removed.Add(questId);
                 OnQuestComplete(questId);
             }
         }
 
-        public void Drop(uint questId)
+        public void Drop(uint questId, bool update)
         {
             if (!Quests.ContainsKey(questId))
                 return;
             var quest = Quests[questId];
-            quest.Drop();
+            quest.Drop(update);
             Quests.Remove(questId);
             _removed.Add(questId);
+            QuestIdManager.Instance.ReleaseId((uint)quest.Id);
         }
 
         public void OnKill(Npc npc)
         {
-            foreach (var quest in Quests.Values)
+            foreach (var quest in Quests.Values.ToList())
                 quest.OnKill(npc);
         }
 
@@ -128,7 +136,7 @@ namespace AAEmu.Game.Models.Game.Char
 
         public void OnItemUse(Item item)
         {
-            foreach (var quest in Quests.Values)
+            foreach (var quest in Quests.Values.ToList())
                 quest.OnItemUse(item);
         }
 

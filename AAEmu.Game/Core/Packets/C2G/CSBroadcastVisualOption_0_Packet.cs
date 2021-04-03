@@ -1,4 +1,5 @@
-﻿using AAEmu.Commons.Network;
+﻿using System;
+using AAEmu.Commons.Network;
 using AAEmu.Game.Core.Managers;
 using AAEmu.Game.Core.Network.Connections;
 using AAEmu.Game.Core.Network.Game;
@@ -23,6 +24,10 @@ namespace AAEmu.Game.Core.Packets.C2G
             Connection.ActiveChar.VisualOptions.Read(stream);
 
             Connection.SendPacket(new SCUnitStatePacket(Connection.ActiveChar));
+
+            //Connection.SendPacket(new SCDailyResetPacket(3));
+            //Connection.SendPacket(new SCDailyResetPacket(9));
+            //Connection.SendPacket(new SCCurServerTimePacket(DateTime.Now));
 
             Connection.ActiveChar.PushSubscriber(TimeManager.Instance.Subscribe(Connection, new TimeOfDayObserver(Connection.ActiveChar)));
 

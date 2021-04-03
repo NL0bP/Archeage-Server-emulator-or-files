@@ -2,7 +2,7 @@ ArcheAge (kor. 아키에이지 — "Ancient times"; ch. 上古世紀) — client
 
 Our project is mainly focused on version 3.0.3.0 (Attention! There is bad decryption of packets. Do your own encryption research).
 
-# [![AAEmu](https://boards.aaemu.pw/assets/files/2018-10-11/1539288486-150348-aaemu-blank-text.png)](https://boards.aaemu.pw/)
+# ![AAEmu](https://i.gyazo.com/b5d37dad118d5c897dcdc0b46005a156.gif)
 
 __Open source server software for ArcheAge written in .Net Core__
 
@@ -38,9 +38,8 @@ atel0/AAEmu are not affiliated with XLGames. All brands and trademarks belong to
 
 Now you can create characters.
 Now you can enter the world.
-update: 09.01.2020
-Now with packet decryption (Attention! There is bad decryption of packets. Do your own encryption research)
-
+update: 09.01.2020 Now with packet decryption (Attention! There is bad decryption of packets. Do your own encryption research)
+update: 02.11.2020 Merging with the current branch aaemu\feat_artificial_intelligence (not all packages have been tested yet, so it works with errors)
 ![avatar](/doc/img/Screenshot_1.png)
 ![avatar](/doc/img/Screenshot_2.png)
 ![avatar](/doc/img/Screenshot_3.png)
